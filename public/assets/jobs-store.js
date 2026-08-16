@@ -101,17 +101,40 @@
   /* 내 공고 판정.
      uid가 같으면 무조건 내 것이고, uid가 없던 시절(데모 모드)에 올린 공고는
      기업명으로 맞춘다. 공백과 대소문자는 무시한다. */
+  /* 기업명이 서로 조금 달라도 같은 곳으로 본다.
+     '서울대학교병원'과 '서울대학교병원 (SNUH)'처럼 표기만 다른 경우가 많다. */
+  function sameCompany(a, b) {
+    var x = norm(a);
+    var y = norm(b);
+    if (!x || !y) return false;
+    return x === y || x.indexOf(y) !== -1 || y.indexOf(x) !== -1;
+  }
+
   function byOwner(owner) {
     var uid = (window.ChwireupAccounts && window.ChwireupAccounts.uid()) || null;
-    var key = norm(owner);
 
     return read().filter(function (j) {
-      // 등록자 uid가 있으면 그것만 믿는다. 기업명이 같은 다른 계정의 공고가
-      // 딸려오면 안 된다.
+      // 등록자 uid가 있으면 그것만 믿는다
       if (j.ownerUid) return !!uid && j.ownerUid === uid;
       // uid 없이 올린 옛 공고는 기업명으로 맞춘다
-      return !!key && (norm(j.owner) === key || norm(j.companyName) === key);
+      return sameCompany(j.owner, owner) || sameCompany(j.companyName, owner);
     });
+  }
+
+  /* 플랫폼이 미리 싣고 있는 공고 중 내 기업 이름과 같은 것.
+     기업 계정에서 "우리 회사 공고"로 함께 보여준다. 수정 대상은 아니다. */
+  function catalogFor(companyName) {
+    var list = window.ChwireupCatalog || [];
+    return list
+      .filter(function (j) {
+        return sameCompany(j.companyName, companyName);
+      })
+      .map(function (j) {
+        var copy = {};
+        for (var k in j) copy[k] = j[k];
+        copy.readOnly = true;
+        return copy;
+      });
   }
 
   function find(id) {
@@ -122,5 +145,5 @@
     return hit;
   }
 
-  window.ChwireupJobs = { list: read, add: add, remove: remove, byOwner: byOwner, find: find };
+  window.ChwireupJobs = { list: read, add: add, remove: remove, byOwner: byOwner, find: find, catalogFor: catalogFor, sameCompany: sameCompany };
 })();

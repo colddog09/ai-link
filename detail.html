@@ -1072,17 +1072,8 @@
           appliedJobIds: updatedAppliedIds,
         }));
 
-        if (db) {
-          try {
-            await db.collection('applications').doc(newApp.id).set(newApp);
-            await db.collection('users').doc('user_kim_gunwoo').set({
-              appliedJobIds: updatedAppliedIds,
-              updatedAt: new Date().toISOString()
-            }, { merge: true });
-          } catch (e) {
-            console.error("Firestore application save error:", e);
-          }
-        }
+        /* 서버 저장은 위의 ChwireupApplications.apply가 이미 처리했다.
+           여기서 또 쓰면 고정된 데모 계정 문서를 건드려 권한 오류가 난다. */
         setIsApplyModalOpen(false);
       };
 

@@ -48,6 +48,36 @@
     return (window.ChwireupAuth && window.ChwireupAuth.name()) || '구직자';
   }
 
+  /* 카탈로그 공고에는 등록자 uid가 없다. 기업명으로 기업 계정을 찾아
+     연결해 두어야 그 기업이 지원자를 볼 수 있다.
+     companies 문서는 공개 읽기라 로그인 없이도 조회된다. */
+  function findOwnerUid(companyName) {
+    var d = db();
+    if (!d || !companyName) return Promise.resolve(null);
+
+    // '서울대학교병원 (SNUH)' 같은 표기에서 괄호를 떼고도 찾아본다
+    var plain = String(companyName).replace(/\s*\(.*?\)\s*/g, '').trim();
+    var names = plain && plain !== companyName ? [companyName, plain] : [companyName];
+
+    return names
+      .reduce(function (chain, name) {
+        return chain.then(function (found) {
+          if (found) return found;
+          return d
+            .collection('companies')
+            .where('name', '==', name)
+            .limit(1)
+            .get()
+            .then(function (snap) {
+              return snap.empty ? null : snap.docs[0].data().uid || snap.docs[0].id;
+            })
+            .catch(function () {
+              return null;
+            });
+        });
+      }, Promise.resolve(null));
+  }
+
   /* 지원하기. 같은 공고에 두 번 지원하지 않도록 먼저 확인한다. */
   function apply(job, coverNote) {
     var profile = (window.ChwireupProfile && window.ChwireupProfile.read()) || {};
@@ -65,7 +95,8 @@
       owner: job.owner || job.companyName || '',
       applicantUid: uid(),
       applicantName: myName(),
-      applicantYears: Number(profile.years) || 0,
+      // 진단 전에 지원하면 연차를 알 수 없다. 그때는 표시를 비워 둔다.
+      applicantYears: Number(profile.years) || null,
       applicantSpecialty: (profile.careers && profile.careers.length && profile.careers[0].field) || '',
       coverNote: coverNote || '',
       status: '접수됨',
@@ -79,12 +110,30 @@
     afterAuth(function () {
       var d = db();
       if (!d) return;
-      d.collection('applications')
-        .doc(entry.id)
-        .set(entry)
-        .catch(function (e) {
-          console.warn('지원 내역 저장 실패:', e && e.code);
-        });
+
+      var save = function (ownerUid) {
+        if (ownerUid) {
+          entry.ownerUid = ownerUid;
+          // 로컬 기록에도 반영해 둔다
+          var list = readLocal().map(function (a) {
+            if (a.id === entry.id) a.ownerUid = ownerUid;
+            return a;
+          });
+          writeLocal(list);
+        }
+        d.collection('applications')
+          .doc(entry.id)
+          .set(entry)
+          .catch(function (e) {
+            console.warn('지원 내역 저장 실패:', e && e.code);
+          });
+      };
+
+      if (entry.ownerUid) {
+        save(entry.ownerUid);
+      } else {
+        findOwnerUid(entry.companyName).then(save);
+      }
     });
 
     return entry;

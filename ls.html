@@ -418,15 +418,12 @@
         var signup = mode === 'signup';
 
         el('form-title').textContent = signup ? c.signupTitle : c.loginTitle;
-        el('form-desc').textContent = signup
-          ? c.signupDesc
-          : '아이디와 비밀번호를 입력하면 계정에 맞는 화면으로 이동합니다';
+        el('form-desc').textContent = signup ? c.signupDesc : c.loginDesc;
         el('cta-text').textContent = signup ? '가입하고 시작하기' : '로그인';
         el('label-name').textContent = c.nameLabel;
         el('label-extra').textContent = c.extraLabel;
 
         el('field-name').classList.toggle('hidden', !signup);
-        el('role-picker').classList.toggle('hidden', !signup);
         el('field-extra').classList.toggle('hidden', !signup);
         el('field-confirm').classList.toggle('hidden', !signup);
         el('field-region').classList.toggle('hidden', !signup);
@@ -540,9 +537,19 @@
               (res.mode === 'demo' ? ' (데모 모드: 이 브라우저에만 저장됩니다)' : ' Firebase에 저장했습니다.')
           );
 
-          // 로그인은 계정에 저장된 역할을 따르고, 가입은 방금 고른 역할을 쓴다
+          /* 로그인은 계정에 저장된 역할이 우선이다. 화면에서 고른 것과 다르면
+             계정 쪽을 따르고, 왜 그렇게 됐는지 알려 준다. */
           var resolvedRole =
             res.role || (mode === 'signup' ? role : window.ChwireupAuth.role()) || role;
+
+          if (mode === 'login' && resolvedRole !== role) {
+            alertBox(
+              'ok',
+              '이 아이디는 ' + (resolvedRole === 'company' ? '기업' : '개인') +
+                ' 회원 계정입니다. 해당 화면으로 이동합니다.'
+            );
+          }
+
           var go = resolvedRole === 'company' ? 'employer.html' : 'assessment.html';
           setTimeout(function () { location.href = go; }, 750);
         } catch (err) {

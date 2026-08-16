@@ -65,18 +65,24 @@
   }
 
   /* ── 역량 점수 ────────────────────────────────────────────
-     연차가 길수록, 분야가 뚜렷할수록, 자격이 많을수록 올라간다.
-     한 축이라도 근거가 없으면 기본치에 머문다. */
+     입력을 바꾸면 눈에 띄게 움직이되, 하한을 80점으로 둔다.
+     축마다 0~1 신호를 만들어 80~99 구간에 펼친다.
+       분야 40% · 연차 25% · 경력 폭 15% · 자격 20%
+     여기에 근무 형태와 통근 범위를 가산점으로 얹는다. */
+  var FLOOR = 80;
+  var SPAN = 19;
+
   function scores(profile) {
     var p = profile || read() || {};
-    var years = Math.max(0, Number(p.years) || 0);
+    var careers = p.isNewcomer ? [] : p.careers || [];
+    var years = p.isNewcomer ? 0 : Math.max(0, Number(p.years) || 0);
     var certs = (p.certifications || []).length;
-    var careers = p.careers || [];
 
-    // 연차 점수: 15년에서 대체로 포화한다
     var yearScore = Math.min(1, years / 15);
+    var breadth = Math.min(1, careers.length / 3);
+    var certScore = Math.min(1, certs / 8);
 
-    // 분야 가중치는 경력 항목의 평균으로 본다
+    // 경력 항목들의 분야 가중치를 축별로 평균낸다
     var acc = { clinical: 0, governance: 0, leadership: 0, communication: 0 };
     var n = 0;
     careers.forEach(function (c) {
@@ -89,31 +95,49 @@
     if (!n) {
       var base = FIELD_WEIGHTS.other;
       Object.keys(acc).forEach(function (k) {
-        acc[k] = base[k];
+        acc[k] = base[k] * 0.75;
       });
       n = 1;
     }
 
-    var certBoost = Math.min(0.12, certs * 0.03);
+    // 근무 형태에 따라 강조되는 축이 다르다
+    var bonus = { clinical: 0, governance: 0, leadership: 0, communication: 0 };
+    if (p.workstyle === 'fulltime') {
+      bonus.leadership = 3;
+      bonus.governance = 2;
+    } else if (p.workstyle === 'flexible') {
+      bonus.communication = 3;
+      bonus.leadership = 1;
+    } else if (p.workstyle === 'consulting') {
+      bonus.clinical = 3;
+      bonus.communication = 2;
+    }
 
-    function mix(weight, floor) {
-      var v = floor + (weight / n) * 34 * (0.55 + 0.45 * yearScore) + certBoost * 100 * 0.35;
-      return Math.max(40, Math.min(99, Math.round(v)));
+    // 통근을 넓게 잡을수록 협업 범위가 넓다고 본다
+    var commute = Math.min(3, Number(p.commute) || 0);
+    bonus.leadership += commute;
+    bonus.communication += commute;
+
+    function axis(fieldWeight, extra) {
+      var signal =
+        0.4 * (fieldWeight / n) + 0.25 * yearScore + 0.15 * breadth + 0.2 * certScore;
+      return Math.max(FLOOR, Math.min(99, Math.round(FLOOR + signal * SPAN + extra)));
     }
 
     var out = {
-      clinical: mix(acc.clinical, 52),
-      governance: mix(acc.governance, 50),
-      leadership: mix(acc.leadership, 48),
-      communication: mix(acc.communication, 50)
+      clinical: axis(acc.clinical, bonus.clinical),
+      governance: axis(acc.governance, bonus.governance),
+      leadership: axis(acc.leadership, bonus.leadership),
+      communication: axis(acc.communication, bonus.communication)
     };
 
-    out.overall = Math.round(
-      (out.clinical * 0.35 + out.governance * 0.25 + out.leadership * 0.2 + out.communication * 0.2) * 10
-    ) / 10;
+    out.overall =
+      Math.round(
+        (out.clinical * 0.35 + out.governance * 0.25 + out.leadership * 0.2 + out.communication * 0.2) * 10
+      ) / 10;
 
-    // 상위 몇 퍼센트인지 대략적인 위치. 종합 점수를 눌러 담는다.
-    out.percentile = Math.max(0.5, Math.round((100 - out.overall) * 0.9 * 10) / 10);
+    // 종합 점수가 높을수록 상위 비율이 작아진다
+    out.percentile = Math.max(0.8, Math.round((100 - out.overall) * 2.4 * 10) / 10);
 
     return out;
   }
