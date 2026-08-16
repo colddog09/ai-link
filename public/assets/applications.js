@@ -27,6 +27,15 @@
     } catch (e) {}
   }
 
+  // 로그인 세션이 복원된 다음에 실행한다
+  function afterAuth(fn) {
+    if (window.ChwireupAccounts && window.ChwireupAccounts.whenReady) {
+      window.ChwireupAccounts.whenReady().then(fn);
+    } else {
+      fn();
+    }
+  }
+
   function db() {
     return (window.ChwireupDB && window.ChwireupDB.db()) || null;
   }
@@ -67,15 +76,16 @@
     list.unshift(entry);
     writeLocal(list);
 
-    var d = db();
-    if (d) {
+    afterAuth(function () {
+      var d = db();
+      if (!d) return;
       d.collection('applications')
         .doc(entry.id)
         .set(entry)
         .catch(function (e) {
           console.warn('지원 내역 저장 실패:', e && e.code);
         });
-    }
+    });
 
     return entry;
   }
@@ -90,9 +100,9 @@
     });
   }
 
-  /* 기업이 받은 지원 목록. 서버가 있으면 실시간으로 따라간다. */
+  /* 기업이 받은 지원 목록.
+     로컬에 있는 것부터 먼저 보여주고, 세션이 복원되면 서버 구독을 붙인다. */
   function watchForEmployer(ownerName, onChange) {
-    var d = db();
     var myUid = uid();
 
     var local = readLocal().filter(function (a) {
@@ -101,30 +111,40 @@
     });
     onChange(local);
 
-    if (!d) return function () {};
+    var unsub = function () {};
 
-    var query = myUid
-      ? d.collection('applications').where('ownerUid', '==', myUid)
-      : d.collection('applications').where('owner', '==', ownerName);
+    afterAuth(function () {
+      var d = db();
+      if (!d) return;
 
-    return query.onSnapshot(
-      function (snap) {
-        var remote = snap.docs.map(function (doc) {
-          return doc.data();
-        });
-        var seen = {};
-        var merged = [];
-        remote.concat(local).forEach(function (a) {
-          if (!a || !a.id || seen[a.id]) return;
-          seen[a.id] = true;
-          merged.push(a);
-        });
-        onChange(merged);
-      },
-      function (err) {
-        console.warn('지원자 목록을 불러오지 못했습니다:', err && err.code);
-      }
-    );
+      var currentUid = uid();
+      var query = currentUid
+        ? d.collection('applications').where('ownerUid', '==', currentUid)
+        : d.collection('applications').where('owner', '==', ownerName);
+
+      unsub = query.onSnapshot(
+        function (snap) {
+          var remote = snap.docs.map(function (doc) {
+            return doc.data();
+          });
+          var seen = {};
+          var merged = [];
+          remote.concat(local).forEach(function (a) {
+            if (!a || !a.id || seen[a.id]) return;
+            seen[a.id] = true;
+            merged.push(a);
+          });
+          onChange(merged);
+        },
+        function (err) {
+          console.warn('지원자 목록을 불러오지 못했습니다:', err && err.code);
+        }
+      );
+    });
+
+    return function () {
+      unsub();
+    };
   }
 
   function setStatus(applicationId, status) {
@@ -134,15 +154,16 @@
     });
     writeLocal(list);
 
-    var d = db();
-    if (d) {
+    afterAuth(function () {
+      var d = db();
+      if (!d) return;
       d.collection('applications')
         .doc(applicationId)
         .set({ status: status }, { merge: true })
         .catch(function (e) {
           console.warn('상태 변경 실패:', e && e.code);
         });
-    }
+    });
   }
 
   window.ChwireupApplications = {

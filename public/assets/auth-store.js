@@ -229,6 +229,37 @@
     } catch (e) {}
   }
 
+  /* 페이지가 열린 직후에는 Firebase가 저장된 세션을 복원하는 중이라
+     currentUser가 잠시 비어 있다. 그 사이에 Firestore에 쓰면 토큰이 없어
+     권한 거부가 난다. 복원이 끝날 때까지 기다리는 약속을 제공한다. */
+  var readyPromise = null;
+
+  function whenReady() {
+    if (readyPromise) return readyPromise;
+
+    readyPromise = new Promise(function (resolve) {
+      if (!init() || !auth) return resolve(null);
+      if (auth.currentUser) return resolve(auth.currentUser);
+
+      var done = false;
+      var unsub = auth.onAuthStateChanged(function (user) {
+        if (done) return;
+        done = true;
+        if (unsub) unsub();
+        resolve(user);
+      });
+
+      // 복원이 끝나지 않아도 3초 뒤에는 진행한다
+      setTimeout(function () {
+        if (done) return;
+        done = true;
+        resolve(auth.currentUser || null);
+      }, 3000);
+    });
+
+    return readyPromise;
+  }
+
   function uid() {
     try {
       return localStorage.getItem('chwireup-uid') || null;
@@ -271,6 +302,7 @@
     signIn: signIn,
     signOut: signOut,
     uid: uid,
+    whenReady: whenReady,
     message: message,
     isFirebase: function () {
       return init();

@@ -611,6 +611,57 @@
     const db = (window.ChwireupDB && window.ChwireupDB.db()) || null;
     const isFirebaseReady = !!db;
 
+    /* 목록용 공고(기업 등록분, 카탈로그)를 상세 화면 구조로 채운다.
+       빠진 항목이 있으면 렌더링이 실패하므로 기본값을 반드시 채운다. */
+    function shapeJob(c) {
+      if (!c) return null;
+      if (c.aiInsight && c.details && c.recruiter) return c;
+
+      const specialty = c.specialty || '';
+      return Object.assign({}, c, {
+        verifiedCompany: c.verifiedCompany !== false,
+        matchScore: c.matchScore || c.matchRate || 80,
+        stabilityScore: c.stabilityScore || 82,
+        salaryKRW: c.salaryKRW || c.salaryRange || '협의',
+        employmentType: c.employmentType || '정규직 / 근무 형태 협의',
+        experienceLevel: c.experienceLevel || c.experience || '경력 무관',
+        avgTenureYears: c.avgTenureYears || 7.4,
+        avgTenurePercentile: c.avgTenurePercentile || '업계 상위 30%',
+        salaryPercentile: c.salaryPercentile || '상위 20%',
+        stabilityGrade: c.stabilityGrade || 'AA (재무·근속 확인 완료)',
+        creditRating: c.creditRating || 'A2',
+        retentionRate: c.retentionRate || '95.6%',
+        regularWorkerRate: c.regularWorkerRate || '98.1%',
+        aiInsight: c.aiInsight || {
+          summary:
+            `${c.companyName || '해당 기업'}의 ${c.title || '이 포지션'}입니다. ` +
+            (specialty ? `${specialty} 역량을 중심으로 ` : '') +
+            '사람이 최종 판단을 맡는 자리로 분류되어 자동화 대체 위험이 낮습니다.',
+          coreCompetencyMatch: specialty || '직무 핵심 역량',
+          growthPotential: '조직 내 의사결정 권한 확대 및 자문 역할 확장',
+          matchedKeywords: [c.location, c.experience, specialty].filter(Boolean)
+        },
+        details: c.details || {
+          mainResponsibilities: [
+            `${c.title || '해당 직무'} 수행 및 관련 의사결정 검토`,
+            '자동화 도구가 내놓은 결과의 최종 확인과 책임 판단',
+            '내부 기준 수립과 구성원 교육'
+          ],
+          qualifications: [c.experience || '경력 무관', specialty ? `${specialty} 실무 경험` : '해당 직무 실무 경험'],
+          preferredQualifications: ['조직 내 자문 또는 보직 경험자'],
+          benefits: ['재무·근속 지표 확인 완료 기업', '0507 안심번호 상담 제공'],
+          workingHours: '주 5일 / 세부 조건 협의'
+        },
+        recruiter: c.recruiter || {
+          name: '채용 담당자',
+          title: `${c.companyName || ''} 인사팀`,
+          avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+          responseTime: '보통 하루 이내 응답',
+          safePhone: '0507-1384-0000'
+        }
+      });
+    }
+
     // ==========================================
     // 3. MAIN COMPONENT IMPLEMENTATION
     // ==========================================
@@ -732,48 +783,26 @@
         setFirestoreStatus('실시간 동기화 완료');
 
         // 1. Initial Seed of Jobs if empty
-        const initFirestoreData = async () => {
-          try {
-            const jobsSnap = await db.collection('jobs').get();
-            if (jobsSnap.empty) {
-              const batch = db.batch();
-              MOCK_JOBS.forEach((job) => {
-                const docRef = db.collection('jobs').doc(job.id);
-                batch.set(docRef, { ...job, updatedAt: new Date().toISOString() });
-              });
-              await batch.commit();
-            }
-
-            // Seed User
-            const userRef = db.collection('users').doc('user_kim_gunwoo');
-            const userSnap = await userRef.get();
-            if (!userSnap.exists) {
-              await userRef.set({ ...INITIAL_USER_PROFILE, updatedAt: new Date().toISOString() });
-            }
-
-            // Seed Initial Messages if empty
-            const msgSnap = await db.collection('messages').limit(1).get();
-            if (msgSnap.empty) {
-              const msgBatch = db.batch();
-              messages.forEach((msg) => {
-                const docRef = db.collection('messages').doc(msg.id);
-                msgBatch.set(docRef, { ...msg, userId: 'user_kim_gunwoo', createdAt: new Date().toISOString() });
-              });
-              await msgBatch.commit();
-            }
-          } catch (e) {
-            console.error("Firestore Init/Seed Error:", e);
-          }
-        };
-
-        initFirestoreData();
+        /* 예전에는 여기서 MOCK_JOBS를 Firestore에 밀어 넣었다.
+           지금은 공고 원본이 assets/jobs-data.js에 있고, Firestore에는 기업이
+           직접 올린 공고만 둔다. 보안 규칙과도 충돌해 시드를 없앴다. */
 
         // 2. Listen to Jobs
+        //    기업이 올린 공고에는 상세 항목이 없다. 화면이 기대하는 모양으로
+        //    채워 넣지 않으면 렌더링 중에 터진다.
         const unsubJobs = db.collection('jobs').onSnapshot((snapshot) => {
-          if (!snapshot.empty) {
-            const dbJobs = snapshot.docs.map(doc => doc.data());
-            setJobs(dbJobs);
-          }
+          if (snapshot.empty) return;
+          const dbJobs = snapshot.docs.map(doc => shapeJob(doc.data()));
+          setJobs((prev) => {
+            const seen = {};
+            const merged = [];
+            dbJobs.concat(prev).forEach((j) => {
+              if (!j || !j.id || seen[j.id]) return;
+              seen[j.id] = true;
+              merged.push(j);
+            });
+            return merged;
+          });
         }, (err) => console.warn("Jobs listener:", err));
 
         // 3. Listen to User Profile
@@ -872,64 +901,14 @@
         });
       }, [jobs, searchQuery, selectedDistrict, selectedWorkType]);
 
-      // MOCK_JOBS에 없는 공고(카탈로그·기업 등록분)는 목록 데이터로 상세를 구성한다
+      // MOCK_JOBS에 없는 공고는 목록 데이터로 상세를 구성한다
       const buildFromCatalog = (id) => {
         const pool = [].concat(
           (window.ChwireupJobs && window.ChwireupJobs.list()) || [],
           window.ChwireupCatalog || []
         );
-        const c = pool.find((j) => j.id === id);
-        if (!c) return null;
-
-        return {
-          id: c.id,
-          companyName: c.companyName,
-          verifiedCompany: true,
-          title: c.title,
-          matchScore: c.matchRate || 80,
-          stabilityScore: 82,
-          salaryKRW: c.salaryRange,
-          location: c.location,
-          employmentType: '정규직 / 근무 형태 협의',
-          experienceLevel: c.experience || '경력 무관',
-          avgTenureYears: 7.4,
-          avgTenurePercentile: '업계 상위 30%',
-          salaryPercentile: '상위 20%',
-          stabilityGrade: 'AA (재무·근속 확인 완료)',
-          creditRating: 'A2',
-          retentionRate: '95.6%',
-          regularWorkerRate: '98.1%',
-          imageUrl: c.imageUrl,
-          aiInsight: {
-            summary: `${c.companyName}의 ${c.title} 포지션입니다. ${
-              c.specialty ? c.specialty + ' 역량을 중심으로 ' : ''
-            }사람이 최종 판단을 맡는 자리로 분류되어, 자동화 대체 위험이 낮은 직무로 평가됩니다.`,
-            coreCompetencyMatch: c.specialty || '직무 핵심 역량',
-            growthPotential: '조직 내 의사결정 권한 확대 및 자문 역할 확장',
-            matchedKeywords: [c.location, c.experience, c.specialty].filter(Boolean),
-          },
-          details: {
-            mainResponsibilities: [
-              `${c.title} 직무 수행 및 관련 의사결정 검토`,
-              '자동화 도구가 내놓은 결과의 최종 확인과 책임 판단',
-              '내부 기준 수립과 구성원 교육',
-            ],
-            qualifications: [
-              c.experience || '경력 무관',
-              c.specialty ? `${c.specialty} 관련 실무 경험` : '해당 직무 실무 경험',
-            ],
-            preferredQualifications: ['조직 내 자문 또는 보직 경험자'],
-            benefits: ['재무·근속 지표 확인 완료 기업', '0507 안심번호 상담 제공'],
-            workingHours: '주 5일 / 세부 조건 협의',
-          },
-          recruiter: {
-            name: '채용 담당자',
-            title: `${c.companyName} 인사팀`,
-            avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
-            responseTime: '보통 하루 이내 응답',
-            safePhone: '0507-1384-0000',
-          },
-        };
+        const hit = pool.find((j) => j.id === id);
+        return hit ? shapeJob(hit) : null;
       };
 
       const selectedJob = useMemo(() => {

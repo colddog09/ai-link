@@ -316,6 +316,7 @@
       /* Firestore에서 내 공고를 가져온다.
          예전에 uid 없이 올린 공고도 있어서, 계정 uid와 기업명 둘 다로 찾는다. */
       (function loadRemote() {
+        var start = function () {
         var db = window.ChwireupDB && window.ChwireupDB.db();
         if (!db) return;
 
@@ -344,6 +345,14 @@
         }
         db.collection('jobs').where('owner', '==', name).onSnapshot(absorb, fail('owner'));
         db.collection('jobs').where('companyName', '==', name).onSnapshot(absorb, fail('companyName'));
+        };
+
+        // 로그인 세션이 복원된 뒤에 조회해야 권한이 붙는다
+        if (window.ChwireupAccounts && window.ChwireupAccounts.whenReady) {
+          window.ChwireupAccounts.whenReady().then(start);
+        } else {
+          start();
+        }
       })();
     })();
   </script>

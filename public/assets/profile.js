@@ -40,7 +40,7 @@
     } catch (e) {}
 
     // 로그인돼 있으면 서버에도 남긴다. 실패해도 화면은 그대로 진행한다.
-    try {
+    var write = function () {
       var db = window.ChwireupDB && window.ChwireupDB.db();
       var uid = window.ChwireupAccounts && window.ChwireupAccounts.uid();
       if (db && uid) {
@@ -51,7 +51,15 @@
             console.warn('프로필 저장 실패:', e && e.code);
           });
       }
-    } catch (e) {}
+    };
+
+    if (window.ChwireupAccounts && window.ChwireupAccounts.whenReady) {
+      window.ChwireupAccounts.whenReady().then(write);
+    } else {
+      try {
+        write();
+      } catch (e) {}
+    }
 
     return profile;
   }

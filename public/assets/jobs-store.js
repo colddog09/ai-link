@@ -22,6 +22,15 @@
     } catch (e) {}
   }
 
+  // 로그인 세션이 복원된 다음에 실행한다
+  function afterAuth(fn) {
+    if (window.ChwireupAccounts && window.ChwireupAccounts.whenReady) {
+      window.ChwireupAccounts.whenReady().then(fn);
+    } else {
+      fn();
+    }
+  }
+
   function slug(name) {
     return (
       'emp-' +
@@ -54,12 +63,20 @@
     write(list);
 
     // 목록 화면과 같은 데이터베이스에 남긴다
-    try {
-      var db = window.ChwireupDB && window.ChwireupDB.db();
-      if (db) db.collection('jobs').doc(entry.id).set(entry);
-    } catch (e) {
-      console.warn('Firestore 저장 실패, 로컬에만 기록합니다:', e);
-    }
+    afterAuth(function () {
+      try {
+        var db = window.ChwireupDB && window.ChwireupDB.db();
+        if (!db) return;
+        db.collection('jobs')
+          .doc(entry.id)
+          .set(entry)
+          .catch(function (e) {
+            console.warn('공고 저장 실패, 로컬에만 기록합니다:', e && e.code);
+          });
+      } catch (e) {
+        console.warn('공고 저장 실패, 로컬에만 기록합니다:', e);
+      }
+    });
 
     return entry;
   }
@@ -69,10 +86,12 @@
       return j.id !== id;
     });
     write(list);
-    try {
-      var db = window.ChwireupDB && window.ChwireupDB.db();
-      if (db) db.collection('jobs').doc(id).delete();
-    } catch (e) {}
+    afterAuth(function () {
+      try {
+        var db = window.ChwireupDB && window.ChwireupDB.db();
+        if (db) db.collection('jobs').doc(id).delete();
+      } catch (e) {}
+    });
   }
 
   function norm(v) {
