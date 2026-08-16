@@ -326,7 +326,10 @@
         var absorb = function (snap) {
           snap.docs.forEach(function (d) {
             var data = d.data();
-            if (data && data.id) found[data.id] = data;
+            if (!data || !data.id) return;
+            // 등록자 uid가 다른 공고는 기업명이 같아도 내 것이 아니다
+            if (data.ownerUid && data.ownerUid !== uid) return;
+            found[data.id] = data;
           });
           remoteJobs = Object.keys(found).map(function (k) {
             return found[k];

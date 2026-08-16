@@ -106,10 +106,11 @@
     var key = norm(owner);
 
     return read().filter(function (j) {
-      if (uid && j.ownerUid && j.ownerUid === uid) return true;
-      if (key && norm(j.owner) === key) return true;
-      if (key && norm(j.companyName) === key) return true;
-      return false;
+      // 등록자 uid가 있으면 그것만 믿는다. 기업명이 같은 다른 계정의 공고가
+      // 딸려오면 안 된다.
+      if (j.ownerUid) return !!uid && j.ownerUid === uid;
+      // uid 없이 올린 옛 공고는 기업명으로 맞춘다
+      return !!key && (norm(j.owner) === key || norm(j.companyName) === key);
     });
   }
 
