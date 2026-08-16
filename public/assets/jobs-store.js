@@ -75,12 +75,22 @@
     } catch (e) {}
   }
 
-  // 기업명이 바뀌어도 내 공고가 사라지지 않도록 uid를 먼저 본다
+  function norm(v) {
+    return String(v || '').replace(/\s+/g, '').toLowerCase();
+  }
+
+  /* 내 공고 판정.
+     uid가 같으면 무조건 내 것이고, uid가 없던 시절(데모 모드)에 올린 공고는
+     기업명으로 맞춘다. 공백과 대소문자는 무시한다. */
   function byOwner(owner) {
     var uid = (window.ChwireupAccounts && window.ChwireupAccounts.uid()) || null;
+    var key = norm(owner);
+
     return read().filter(function (j) {
-      if (uid && j.ownerUid) return j.ownerUid === uid;
-      return j.owner === owner;
+      if (uid && j.ownerUid && j.ownerUid === uid) return true;
+      if (key && norm(j.owner) === key) return true;
+      if (key && norm(j.companyName) === key) return true;
+      return false;
     });
   }
 

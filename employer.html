@@ -158,14 +158,33 @@
         ? 'Firestore 연동'
         : '로컬 저장 (데모)';
 
+      // Firestore에서 받아 온 공고를 담아 둔다. 연결이 없으면 비어 있다.
+      var remoteJobs = [];
+
+      function mergedJobs() {
+        var local = window.ChwireupJobs.byOwner(name);
+        var seen = {};
+        var all = [];
+        local.concat(remoteJobs).forEach(function (j) {
+          if (!j || !j.id || seen[j.id]) return;
+          seen[j.id] = true;
+          all.push(j);
+        });
+        return all;
+      }
+
       function renderJobs() {
         var box = document.getElementById('my-jobs');
-        var jobs = window.ChwireupJobs.byOwner(name);
+        var jobs = mergedJobs();
 
         if (!jobs.length) {
           box.innerHTML =
-            '<div class="border border-dashed border-gray-300 rounded-2xl p-8 text-center">' +
+            '<div class="border border-dashed border-gray-300 rounded-2xl p-8 text-center space-y-2">' +
             '<p class="text-xs text-gray-500">등록된 공고가 없습니다. 왼쪽에서 첫 공고를 올려 보세요.</p>' +
+            (onFirebase
+              ? ''
+              : '<p class="text-[11px] text-gray-400">지금은 데모 모드라 공고가 이 브라우저에만 저장됩니다. ' +
+                '다른 기기나 다른 주소에서 올린 공고는 여기에 보이지 않습니다.</p>') +
             '</div>';
           return;
         }
@@ -225,6 +244,29 @@
       });
 
       renderJobs();
+
+      // Firestore가 연결돼 있으면 다른 기기에서 올린 공고까지 함께 보여준다
+      (function loadRemote() {
+        var db = window.ChwireupDB && window.ChwireupDB.db();
+        if (!db) return;
+
+        var uid = window.ChwireupAccounts && window.ChwireupAccounts.uid();
+        var query = uid
+          ? db.collection('jobs').where('ownerUid', '==', uid)
+          : db.collection('jobs').where('owner', '==', name);
+
+        query.onSnapshot(
+          function (snap) {
+            remoteJobs = snap.docs.map(function (d) {
+              return d.data();
+            });
+            renderJobs();
+          },
+          function (err) {
+            console.warn('내 공고를 불러오지 못했습니다:', err);
+          }
+        );
+      })();
     })();
   </script>
 </body>
