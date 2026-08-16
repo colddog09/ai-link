@@ -1,0 +1,6 @@
+{
+  "name": "취R업",
+  "description": "취R업 - 전문직 역량·조건 기반 정밀 채용 매칭, 기업 안정성 지표 분석 및 원스톱 전화·문자·채팅 안심 소통 플랫폼",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isMe(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // 채용공고: 목록은 누구나 보고, 등록과 수정은 작성한 기업 계정만
+    match /jobs/{jobId} {
+      allow read: if true;
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+    }
+
+    // 개인 회원 프로필
+    match /users/{userId} {
+      allow read: if isMe(userId);
+      allow write: if isMe(userId);
+    }
+
+    // 기업 회원 정보
+    match /companies/{companyId} {
+      // 공고에 붙는 기업 소개는 공개해도 되는 정보다
+      allow read: if true;
+      allow write: if isMe(companyId);
+    }
+
+    // 역할 색인 (로그인 시 개인/기업 구분을 읽는다)
+    match /accounts/{accountId} {
+      allow read: if isMe(accountId);
+      allow write: if isMe(accountId);
+    }
+
+    // 지원 내역: 지원한 본인과 공고를 올린 기업만
+    match /applications/{applicationId} {
+      allow read: if signedIn() &&
+        (resource.data.applicantUid == request.auth.uid ||
+         resource.data.ownerUid == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.applicantUid == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.applicantUid == request.auth.uid;
+    }
+
+    // 1:1 문의 메시지
+    match /messages/{messageId} {
+      allow read: if signedIn() &&
+        (resource.data.fromUid == request.auth.uid ||
+         resource.data.toUid == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.fromUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // AI 진단 리포트: 본인만
+    match /ai_reports/{reportId} {
+      allow read, write: if signedIn() && request.resource.data.userId == request.auth.uid;
+    }
+  }
+}

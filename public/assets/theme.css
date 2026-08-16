@@ -1,0 +1,292 @@
+/* ==========================================================================
+   취R업 – 공통 테마 시트
+   다크 모드(html.dark) 전역 오버라이드와 공용 소품 스타일을 담는다.
+   각 페이지는 Tailwind CDN 유틸리티를 그대로 쓰므로, 클래스 단위로 색만
+   치환해 새 마크업에도 dark: 변형 없이 적용되게 한다.
+   ========================================================================== */
+
+:root {
+  --brand-navy: #002045;
+  --brand-mint: #35c9b8;
+  --page-bg: #f6f8fc;
+  --page-fg: #0f172a;
+  color-scheme: light;
+}
+
+html.dark {
+  --page-bg: #0b1220;
+  --page-fg: #e6ebf5;
+  color-scheme: dark;
+}
+
+/* --------------------------------------------------------------------------
+   스크롤 – 맨 위/아래에서 더 끌리는 고무줄 동작을 막는다
+   -------------------------------------------------------------------------- */
+html, body {
+  overscroll-behavior-y: none;
+  overscroll-behavior-x: none;
+}
+
+/* --------------------------------------------------------------------------
+   로고
+   -------------------------------------------------------------------------- */
+.brand-logo { display: block; }
+.brand-logo-dark { display: none; }
+html.dark .brand-logo-light { display: none; }
+html.dark .brand-logo-dark { display: block; }
+
+/* --------------------------------------------------------------------------
+   테마 토글 버튼
+   -------------------------------------------------------------------------- */
+#theme-toggle {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 9999;
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #0f172a;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 6px 20px rgba(15, 32, 69, 0.14);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+html.dark #theme-toggle {
+  color: #e6ebf5;
+  background: #16203300;
+  background-color: #162033;
+  border-color: #2b3752;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+#theme-toggle:hover { transform: scale(1.06); }
+#theme-toggle:active { transform: scale(0.94); }
+#theme-toggle svg { width: 20px; height: 20px; }
+@media (max-width: 767px) {
+  #theme-toggle { bottom: 76px; }
+}
+
+/* --------------------------------------------------------------------------
+   다크 모드 오버라이드
+   -------------------------------------------------------------------------- */
+
+html.dark body {
+  background-color: var(--page-bg);
+  color: var(--page-fg);
+}
+
+/* 배경 계열 */
+html.dark .bg-white,
+html.dark .bg-surface-container-lowest { background-color: #121a2b !important; }
+
+html.dark .bg-gray-50,
+html.dark .bg-slate-50,
+html.dark .bg-\[\#f8fafc\],
+html.dark .bg-\[\#f9fafb\],
+html.dark .bg-background,
+html.dark .bg-surface,
+html.dark .bg-surface-container-low { background-color: #0b1220 !important; }
+
+html.dark .bg-gray-100,
+html.dark .bg-slate-100,
+html.dark .bg-surface-container { background-color: #1b2437 !important; }
+
+html.dark .bg-gray-200,
+html.dark .bg-slate-200 { background-color: #253048 !important; }
+html.dark .bg-gray-300 { background-color: #313e59 !important; }
+html.dark .bg-gray-800 { background-color: #0d1524 !important; }
+html.dark .bg-gray-900 { background-color: #070c17 !important; }
+
+html.dark .bg-white\/95 { background-color: rgba(18, 26, 43, 0.94) !important; }
+html.dark .bg-white\/90 { background-color: rgba(18, 26, 43, 0.9) !important; }
+html.dark .bg-white\/80 { background-color: rgba(18, 26, 43, 0.82) !important; }
+html.dark .bg-white\/70 { background-color: rgba(18, 26, 43, 0.72) !important; }
+html.dark .bg-white\/60 { background-color: rgba(18, 26, 43, 0.62) !important; }
+html.dark .bg-white\/50 { background-color: rgba(18, 26, 43, 0.52) !important; }
+html.dark .bg-white\/40 { background-color: rgba(255, 255, 255, 0.06) !important; }
+
+/* 톤 배경 (뱃지, 알림 박스) */
+html.dark .bg-blue-50   { background-color: rgba(59, 130, 246, 0.14) !important; }
+html.dark .bg-blue-100  { background-color: rgba(59, 130, 246, 0.22) !important; }
+html.dark .bg-indigo-50 { background-color: rgba(99, 102, 241, 0.14) !important; }
+html.dark .bg-emerald-50{ background-color: rgba(16, 185, 129, 0.14) !important; }
+html.dark .bg-green-50  { background-color: rgba(34, 197, 94, 0.14) !important; }
+html.dark .bg-teal-50   { background-color: rgba(20, 184, 166, 0.14) !important; }
+html.dark .bg-amber-50  { background-color: rgba(245, 158, 11, 0.14) !important; }
+html.dark .bg-yellow-50 { background-color: rgba(234, 179, 8, 0.14) !important; }
+html.dark .bg-orange-50 { background-color: rgba(249, 115, 22, 0.14) !important; }
+html.dark .bg-red-50    { background-color: rgba(239, 68, 68, 0.14) !important; }
+html.dark .bg-rose-50   { background-color: rgba(244, 63, 94, 0.14) !important; }
+html.dark .bg-purple-50 { background-color: rgba(168, 85, 247, 0.14) !important; }
+html.dark .bg-violet-50 { background-color: rgba(139, 92, 246, 0.14) !important; }
+html.dark .bg-pink-50   { background-color: rgba(236, 72, 153, 0.14) !important; }
+html.dark .bg-sky-50    { background-color: rgba(14, 165, 233, 0.14) !important; }
+html.dark .bg-cyan-50   { background-color: rgba(6, 182, 212, 0.14) !important; }
+html.dark .bg-\[\#d6e3ff\],
+html.dark .bg-primary-fixed,
+html.dark .bg-primary-fixed\/80,
+html.dark .bg-primary-fixed\/40,
+html.dark .bg-primary-fixed\/30 { background-color: rgba(84, 132, 255, 0.2) !important; }
+html.dark .bg-secondary-container { background-color: #3ad2be !important; }
+
+/* 텍스트 계열 */
+html.dark .text-gray-900,
+html.dark .text-slate-900,
+html.dark .text-black,
+html.dark .text-on-surface,
+html.dark .text-on-background { color: #e9edf6 !important; }
+
+html.dark .text-gray-800,
+html.dark .text-slate-800 { color: #dbe2ef !important; }
+
+html.dark .text-gray-700,
+html.dark .text-slate-700,
+html.dark .text-on-surface-variant { color: #c2cbdb !important; }
+
+html.dark .text-gray-600,
+html.dark .text-slate-600 { color: #a8b3c7 !important; }
+
+html.dark .text-gray-500,
+html.dark .text-slate-500 { color: #93a0b6 !important; }
+
+html.dark .text-gray-400,
+html.dark .text-slate-400 { color: #7d8aa1 !important; }
+
+html.dark .text-gray-300 { color: #6d7a91 !important; }
+
+html.dark .text-primary,
+html.dark .text-\[\#002045\] { color: #8fb4ff !important; }
+
+html.dark .text-blue-900,
+html.dark .text-blue-800,
+html.dark .text-blue-700,
+html.dark .text-blue-600 { color: #82abff !important; }
+html.dark .text-indigo-700, html.dark .text-indigo-600 { color: #a5a9ff !important; }
+html.dark .text-emerald-800, html.dark .text-emerald-700 { color: #4fd6a9 !important; }
+html.dark .text-green-800, html.dark .text-green-700 { color: #5ad681 !important; }
+html.dark .text-teal-800, html.dark .text-teal-700, html.dark .text-teal-600 { color: #48d5c4 !important; }
+html.dark .text-amber-800, html.dark .text-amber-700, html.dark .text-amber-600 { color: #f0b247 !important; }
+html.dark .text-orange-700 { color: #f79457 !important; }
+html.dark .text-red-800, html.dark .text-red-700, html.dark .text-red-600 { color: #ff8080 !important; }
+html.dark .text-rose-700 { color: #ff859b !important; }
+html.dark .text-purple-800, html.dark .text-purple-700 { color: #c08cff !important; }
+html.dark .text-violet-700 { color: #b09cff !important; }
+html.dark .text-sky-700 { color: #62bdf0 !important; }
+html.dark .text-cyan-700 { color: #4ecfe0 !important; }
+
+/* 테두리 계열 */
+html.dark .border-gray-100,
+html.dark .border-slate-100 { border-color: #1e293b !important; }
+html.dark .border-gray-200,
+html.dark .border-slate-200,
+html.dark .border-outline-variant,
+html.dark .border-outline-variant\/60 { border-color: #26324a !important; }
+html.dark .border-gray-300,
+html.dark .border-slate-300 { border-color: #33415c !important; }
+html.dark .border-white { border-color: #26324a !important; }
+html.dark .border-blue-100 { border-color: rgba(59, 130, 246, 0.28) !important; }
+html.dark .border-blue-200 { border-color: rgba(59, 130, 246, 0.36) !important; }
+html.dark .border-emerald-100 { border-color: rgba(16, 185, 129, 0.28) !important; }
+html.dark .border-emerald-200 { border-color: rgba(16, 185, 129, 0.34) !important; }
+html.dark .border-indigo-100 { border-color: rgba(99, 102, 241, 0.28) !important; }
+html.dark .border-amber-100, html.dark .border-amber-200 { border-color: rgba(245, 158, 11, 0.3) !important; }
+html.dark .border-purple-100 { border-color: rgba(168, 85, 247, 0.28) !important; }
+html.dark .border-red-100, html.dark .border-red-200 { border-color: rgba(239, 68, 68, 0.3) !important; }
+html.dark .border-teal-100 { border-color: rgba(20, 184, 166, 0.28) !important; }
+html.dark .border-\[\#adc7f7\],
+html.dark .border-primary-fixed-dim { border-color: rgba(84, 132, 255, 0.3) !important; }
+html.dark .border-primary\/30,
+html.dark .border-\[\#002045\]\/30 { border-color: rgba(143, 180, 255, 0.35) !important; }
+html.dark .border-\[\#002045\] { border-color: #4f7cd8 !important; }
+html.dark .divide-gray-100 > * + * { border-color: #1e293b !important; }
+html.dark .divide-gray-200 > * + * { border-color: #26324a !important; }
+
+/* 브랜드 솔리드 배경은 다크에서 살짝 밝게 */
+html.dark .bg-primary,
+html.dark .bg-\[\#002045\] { background-color: #1c3a6e !important; }
+html.dark .bg-blue-700, html.dark .bg-blue-600 { background-color: #2f63d8 !important; }
+
+/* 폼 요소 */
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #131c2e !important;
+  color: #e9edf6 !important;
+  border-color: #2b3752 !important;
+}
+html.dark input::placeholder,
+html.dark textarea::placeholder { color: #77839a !important; }
+html.dark option { background-color: #131c2e; color: #e9edf6; }
+
+/* 스크롤바 */
+html.dark ::-webkit-scrollbar-track { background: #0b1220; }
+html.dark ::-webkit-scrollbar-thumb { background: #2b3752; }
+html.dark ::-webkit-scrollbar-thumb:hover { background: #3b4a6b; }
+
+/* 사진이 지나치게 튀지 않도록 아주 살짝만 눌러준다 */
+html.dark img:not(.brand-logo):not(.no-dim) { filter: brightness(0.9) contrast(1.02); }
+
+/* --------------------------------------------------------------------------
+   모서리 – 전체적으로 각을 죽인다
+   페이지들이 Tailwind 유틸리티를 그대로 쓰므로 반경만 한 단계씩 키운다.
+   -------------------------------------------------------------------------- */
+.rounded { border-radius: 10px !important; }
+.rounded-md { border-radius: 12px !important; }
+.rounded-lg { border-radius: 14px !important; }
+.rounded-xl { border-radius: 18px !important; }
+.rounded-2xl { border-radius: 22px !important; }
+.rounded-3xl { border-radius: 28px !important; }
+
+/* 버튼과 입력창은 좀 더 부드럽게 */
+button:not(.no-round):not([class*="rounded-full"]),
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select,
+textarea {
+  border-radius: 14px;
+}
+a[class*="rounded-lg"], a[class*="rounded-xl"] { border-radius: 16px; }
+
+/* --------------------------------------------------------------------------
+   화면 전환 – 들어올 때 부드럽게 올라오고, 나갈 때 살짝 사라진다
+   -------------------------------------------------------------------------- */
+/* transform은 쓰지 않는다. body에 transform 애니메이션이 걸리면 body가
+   position: fixed 자식의 컨테이닝 블록이 되어 모달이 화면이 아니라 문서
+   전체 높이 기준으로 배치된다. 그래서 투명도만 다룬다. */
+@keyframes page-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+html.page-fx body {
+  animation: page-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html.page-fx.page-leaving body {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  animation: none;
+}
+
+/* 화면 안에서 탭이나 단계가 바뀔 때도 같은 결로 */
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.view-swap {
+  animation: view-in 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.page-fx body,
+  html.page-fx.page-leaving body,
+  .view-swap {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

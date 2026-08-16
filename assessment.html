@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>AI 역량·적성 진단 포털 - 취R업</title>
+  <meta name="description" content="취R업 - AI 역량·적성 진단 포털. 전문 경력과 선호 조건을 매핑하여 최적의 채용 기회를 추천합니다." />
+  <link rel="icon" href="assets/favicon.png" />
+  <link rel="stylesheet" href="assets/theme.css" />
+  <script src="assets/theme.js"></script>
+  <script src="assets/firebase-db.js"></script>
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  
+  <!-- Firebase 10 Compat SDK CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#002045",
+            "primary-container": "#1a365d",
+            "on-primary": "#ffffff",
+            "on-primary-container": "#86a0cd",
+            "primary-fixed": "#d6e3ff",
+            "primary-fixed-dim": "#adc7f7",
+            "secondary": "#545f72",
+            "secondary-container": "#d5e0f7",
+            "on-secondary-container": "#586377",
+            "tertiary": "#002141",
+            "tertiary-container": "#003765",
+            "tertiary-fixed": "#d3e4ff",
+            "background": "#f7fafc",
+            "on-background": "#181c1e",
+            "surface": "#f7fafc",
+            "on-surface": "#181c1e",
+            "on-surface-variant": "#43474e",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-low": "#f1f4f6",
+            "surface-container": "#ebeef0",
+            "surface-container-high": "#e5e9eb",
+            "surface-container-highest": "#e0e3e5",
+            "outline": "#74777f",
+            "outline-variant": "#c4c6cf",
+            "error": "#ba1a1a",
+            "surface-tint": "#455f88"
+          },
+          fontFamily: {
+            sans: ['Pretendard', '"Noto Sans KR"', '"Work Sans"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    * { font-family: Pretendard, 'Noto Sans KR', 'Work Sans', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .pulse-ring {
+      animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 0.5; }
+      80%, 100% { transform: scale(1.5); opacity: 0; }
+    }
+    .screen-view {
+      display: none;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    .screen-view.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-container">
+
+  <div id="app-header"></div>
+
+  <!-- ==================== SCREEN 1: INTRO (역량 진단 시작) ==================== -->
+  <section id="screen-intro" class="screen-view active flex-1 pt-16">
+    <main class="flex-grow flex items-center justify-center px-4 md:px-6 py-10">
+      <div class="max-w-2xl w-full mx-auto bg-surface-container-lowest rounded-2xl border border-outline-variant/60 shadow-[0_4px_24px_rgba(26,54,93,0.06)] overflow-hidden">
+        <!-- Header Section -->
+        <div class="p-8 pb-6 border-b border-outline-variant/30 text-center">
+          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary text-on-primary mb-4 shadow-sm">
+            <span class="material-symbols-outlined text-[28px] fill">psychology</span>
+          </div>
+          <h2 class="text-2xl md:text-3xl font-bold text-primary mb-3">취R업 AI 역량 진단 시작</h2>
+          <p class="text-sm md:text-base text-on-surface-variant max-w-xl mx-auto leading-relaxed">
+            지금까지 쌓은 경력 가운데 기계가 대신하기 어려운 부분을 찾아냅니다. 그 역량을 기준으로, 사람이 최종 판단을 맡는 자리와 맞춰 드립니다.
+          </p>
+        </div>
+
+        <!-- Empathetic Guidance Privacy Card -->
+        <div class="p-6 md:p-8 bg-surface">
+          <div class="bg-primary-fixed/40 border-l-4 border-primary p-5 rounded-r-xl mb-6 flex gap-4">
+            <span class="material-symbols-outlined text-primary mt-0.5 fill">shield_lock</span>
+            <div>
+              <h3 class="text-base font-semibold text-primary mb-1.5">데이터 보안 및 1인 1계정 안심 보호</h3>
+              <p class="text-xs md:text-sm text-on-surface-variant leading-relaxed">
+                입력하신 전문 이력과 희망 조건 데이터는 암호화되어 Firestore에 안전하게 저장되며, AI 매칭 모델 개선 및 추천 공고 산출 외 어떠한 제3자에게도 무단 제공되지 않습니다.
+              </p>
+            </div>
+          </div>
+
+          <!-- Agreement Checkboxes -->
+          <div class="space-y-3.5 mb-8 pl-1">
+            <label class="flex items-start gap-3 cursor-pointer group">
+              <input id="agree-terms-1" checked class="mt-1 w-4 h-4 rounded border-outline text-primary focus:ring-primary focus:ring-offset-0 bg-surface-container-lowest transition-colors" type="checkbox">
+              <span class="text-sm text-on-surface group-hover:text-primary transition-colors leading-snug">
+                전문 데이터 처리에 관한 <a class="text-primary font-semibold underline underline-offset-2" href="javascript:void(0)" onclick="alert('개인정보처리방침: 이력 정보는 맞춤형 직무 매칭 목적으로만 안전하게 처리됩니다.')">개인정보 처리방침</a>에 동의합니다. (필수)
+              </span>
+            </label>
+            <label class="flex items-start gap-3 cursor-pointer group">
+              <input id="agree-terms-2" checked class="mt-1 w-4 h-4 rounded border-outline text-primary focus:ring-primary focus:ring-offset-0 bg-surface-container-lowest transition-colors" type="checkbox">
+              <span class="text-sm text-on-surface group-hover:text-primary transition-colors leading-snug">
+                취R업 진단 플랫폼 <a class="text-primary font-semibold underline underline-offset-2" href="javascript:void(0)" onclick="alert('이용약관: 안심 소통 및 공정 채용 평가 규정을 준수합니다.')">이용 약관</a>에 동의합니다. (필수)
+              </span>
+            </label>
+          </div>
+
+          <!-- 내 프로필 · 언어 설정 -->
+          <div class="border border-outline-variant rounded-2xl p-5 bg-surface-container-lowest">
+            <div class="flex items-center gap-3 mb-4">
+              <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200"
+                   alt="내 프로필" class="w-11 h-11 rounded-full object-cover border-2 border-primary" />
+              <div class="min-w-0">
+                <p class="text-sm font-bold text-on-surface" id="profile-name">김건우</p>
+                <p class="text-xs text-on-surface-variant">내과·흉부외과 전문의 · 15년</p>
+              </div>
+            </div>
+
+            <label class="text-xs font-bold text-on-surface-variant mb-1.5 block" for="lang-select">언어</label>
+            <select id="lang-select"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+            </select>
+            <p class="text-[11px] text-on-surface-variant mt-2" id="lang-note">고른 언어는 모든 페이지에 적용됩니다.</p>
+          </div>
+
+          <!-- Action Button -->
+          <div class="flex justify-center">
+            <button onclick="navigateTo('screen-work-condition')" class="bg-primary text-on-primary font-semibold py-3.5 px-8 rounded-xl hover:bg-primary/90 active:scale-95 transition shadow-sm w-full sm:w-auto flex items-center justify-center gap-2">
+              <span>근무 조건 설정으로 이동</span>
+              <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- ==================== SCREEN 2: WORK CONDITIONS (근로 여건 및 선호도 설정) ==================== -->
+  <section id="screen-work-condition" class="screen-view pt-16">
+    <div class="flex flex-1">
+      <!-- Side Navigation Bar -->
+      <aside class="fixed left-0 top-16 h-[calc(100vh-64px)] z-40 bg-surface-container-low border-r border-outline-variant w-64 hidden lg:flex flex-col justify-between py-6">
+        <div>
+          <div class="px-6 mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center font-bold shadow-sm">
+                <span class="material-symbols-outlined text-[20px]">tune</span>
+              </div>
+              <div>
+                <h2 class="text-sm font-bold text-primary">취R업 진단 포털</h2>
+                <p class="text-xs text-on-surface-variant">Step 1. 근로 여건</p>
+              </div>
+            </div>
+          </div>
+          <nav class="flex flex-col gap-1.5 px-3">
+            <button onclick="navigateTo('screen-work-condition')" class="flex items-center gap-3 bg-secondary-container text-primary font-semibold rounded-xl px-4 py-3 text-sm text-left transition">
+              <span class="material-symbols-outlined fill text-primary">tune</span>
+              <span>1. 근무 조건 선호</span>
+            </button>
+            <button onclick="navigateTo('screen-experience')" class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-high px-4 py-3 rounded-xl text-sm text-left transition">
+              <span class="material-symbols-outlined">work</span>
+              <span>2. 전문 경력 및 학력</span>
+            </button>
+          </nav>
+        </div>
+        <div class="px-6 space-y-4">
+          <button onclick="navigateTo('screen-experience')" class="w-full border border-outline/50 py-2.5 rounded-xl text-xs font-semibold text-on-surface hover:bg-surface-variant transition flex items-center justify-center gap-1">
+            <span>다음: 전문 경력 입력</span>
+            <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+          </button>
+          <div class="flex flex-col gap-2 pt-2 border-t border-outline-variant/40">
+            <a class="flex items-center gap-1.5 text-on-surface-variant text-xs hover:text-primary transition" href="company.html">
+              <span class="material-symbols-outlined text-[16px]">work</span>
+              채용공고 둘러보기
+            </a>
+            <a class="flex items-center gap-1.5 text-on-surface-variant text-xs hover:text-primary transition" href="detail.html">
+              <span class="material-symbols-outlined text-[16px]">domain</span>
+              기업 상세 정보
+            </a>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-1 lg:ml-64 p-4 md:p-8 lg:p-12 w-full max-w-4xl mx-auto flex flex-col pb-28 lg:pb-12">
+        <!-- Progress Bar -->
+        <div class="mb-8 w-full">
+          <div class="flex justify-between items-end mb-2">
+            <div>
+              <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Step 1 of 2</span>
+              <h1 class="text-2xl md:text-3xl font-bold text-primary">근로 여건 및 선호도 설정</h1>
+            </div>
+            <span class="text-base font-bold text-primary">33%</span>
+          </div>
+          <div class="w-full bg-surface-container-highest rounded-full h-2 overflow-hidden">
+            <div class="bg-primary h-full rounded-full transition-all duration-500" style="width: 33%;"></div>
+          </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="space-y-6">
+          <!-- Empathetic Guidance Card -->
+          <div class="bg-primary-fixed/40 border-l-4 border-primary p-5 rounded-r-xl shadow-sm flex items-start gap-4">
+            <span class="material-symbols-outlined text-primary mt-0.5 fill">info</span>
+            <p class="text-sm text-on-surface leading-relaxed">
+              근로 여건을 파악하면 취R업 AI가 귀하의 라이프스타일과 보상 목표에 맞는 최적의 직무 및 포지션을 정밀하게 매칭합니다.
+            </p>
+          </div>
+
+          <!-- Card 1: Commute -->
+          <div class="bg-surface-container-lowest p-6 md:p-8 rounded-2xl shadow-sm border border-outline-variant/60">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-lg font-bold text-on-surface">선호 통근 거리</label>
+              <span class="material-symbols-outlined text-outline">directions_car</span>
+            </div>
+            <p class="text-xs md:text-sm text-on-surface-variant mb-6">현재 거주지 기준 통근 가능 범위</p>
+            <div class="space-y-4">
+              <input id="commute-range" class="w-full h-2 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary" max="3" min="0" type="range" value="1">
+              <div class="flex justify-between text-xs font-medium text-on-surface-variant px-1">
+                <span class="range-step cursor-pointer" onclick="document.getElementById('commute-range').value=0">원격(재택)</span>
+                <span class="range-step cursor-pointer text-primary font-bold" onclick="document.getElementById('commute-range').value=1">&lt; 30분</span>
+                <span class="range-step cursor-pointer" onclick="document.getElementById('commute-range').value=2">&lt; 1시간</span>
+                <span class="range-step cursor-pointer" onclick="document.getElementById('commute-range').value=3">1.5시간 이상</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Work Style -->
+          <div class="bg-surface-container-lowest p-6 md:p-8 rounded-2xl shadow-sm border border-outline-variant/60">
+            <div class="flex justify-between items-center mb-4">
+              <label class="text-lg font-bold text-on-surface">선호 근무 형태</label>
+              <span class="material-symbols-outlined text-outline">business_center</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <label class="cursor-pointer">
+                <input checked class="peer sr-only" name="workstyle" type="radio" value="fulltime">
+                <div class="p-4 rounded-xl border border-outline-variant text-center hover:bg-surface-container-low transition peer-checked:border-primary peer-checked:bg-primary-container peer-checked:text-on-primary-container shadow-sm flex flex-col items-center gap-2">
+                  <span class="material-symbols-outlined text-2xl">apartment</span>
+                  <span class="text-sm font-semibold">정규직 (주 5일)</span>
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input class="peer sr-only" name="workstyle" type="radio" value="flexible">
+                <div class="p-4 rounded-xl border border-outline-variant text-center hover:bg-surface-container-low transition peer-checked:border-primary peer-checked:bg-primary-container peer-checked:text-on-primary-container shadow-sm flex flex-col items-center gap-2">
+                  <span class="material-symbols-outlined text-2xl">schedule</span>
+                  <span class="text-sm font-semibold">유연근무 (주 3~4일)</span>
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input class="peer sr-only" name="workstyle" type="radio" value="consulting">
+                <div class="p-4 rounded-xl border border-outline-variant text-center hover:bg-surface-container-low transition peer-checked:border-primary peer-checked:bg-primary-container peer-checked:text-on-primary-container shadow-sm flex flex-col items-center gap-2">
+                  <span class="material-symbols-outlined text-2xl">handshake</span>
+                  <span class="text-sm font-semibold">전문 자문 / 비상근</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Card 3: Income -->
+          <div class="bg-surface-container-lowest p-6 md:p-8 rounded-2xl shadow-sm border border-outline-variant/60">
+            <div class="flex justify-between items-center mb-4">
+              <label class="text-lg font-bold text-on-surface">희망 연봉 (만원 단위)</label>
+              <span class="material-symbols-outlined text-outline">payments</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-on-surface mb-2">최소 희망 연봉</label>
+                <div class="relative">
+                  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant font-medium text-sm">₩</span>
+                  <input id="min-salary" class="w-full pl-9 pr-4 py-3 bg-surface border border-outline-variant rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm font-medium" placeholder="8,000" type="number" value="12000">
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-on-surface mb-2">목표 희망 연봉</label>
+                <div class="relative">
+                  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant font-medium text-sm">₩</span>
+                  <input id="max-salary" class="w-full pl-9 pr-4 py-3 bg-surface border border-outline-variant rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm font-medium" placeholder="15,000" type="number" value="18000">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Privacy Notice -->
+          <div class="bg-surface-container-low p-4 rounded-xl flex items-center justify-center gap-2 border border-outline-variant/40">
+            <span class="material-symbols-outlined text-primary text-sm">shield</span>
+            <span class="text-xs text-on-surface-variant text-center">귀하의 보상 데이터는 암호화되어 정밀한 AI 직무 매칭을 위해서만 사용됩니다.</span>
+          </div>
+
+          <!-- Bottom Button Bar -->
+          <div class="flex justify-between items-center pt-4">
+            <button onclick="navigateTo('screen-intro')" class="px-6 py-2.5 border border-outline/50 text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container-low transition">이전</button>
+            <button onclick="navigateTo('screen-experience')" class="px-7 py-2.5 bg-primary text-on-primary rounded-xl text-sm font-semibold hover:bg-primary/90 active:scale-95 transition shadow-sm flex items-center gap-1.5">
+              <span>다음: 경력 및 경험</span>
+              <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- ==================== SCREEN 3: EXPERIENCE & EDUCATION (전문 경력 및 경험) ==================== -->
+  <section id="screen-experience" class="screen-view pt-16">
+    <div class="flex flex-1">
+      <!-- Side Navigation Bar -->
+      <aside class="fixed left-0 top-16 h-[calc(100vh-64px)] z-40 bg-surface-container-low border-r border-outline-variant w-64 hidden lg:flex flex-col justify-between py-6">
+        <div>
+          <div class="px-6 mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center font-bold shadow-sm">
+                <span class="material-symbols-outlined text-[20px]">work</span>
+              </div>
+              <div>
+                <h2 class="text-sm font-bold text-primary">취R업 진단 포털</h2>
+                <p class="text-xs text-on-surface-variant">Step 2. 전문 경력</p>
+              </div>
+            </div>
+          </div>
+          <nav class="flex flex-col gap-1.5 px-3">
+            <button onclick="navigateTo('screen-work-condition')" class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-high px-4 py-3 rounded-xl text-sm text-left transition">
+              <span class="material-symbols-outlined">tune</span>
+              <span>1. 근무 조건 선호</span>
+            </button>
+            <button onclick="navigateTo('screen-experience')" class="flex items-center gap-3 bg-secondary-container text-primary font-semibold rounded-xl px-4 py-3 text-sm text-left transition">
+              <span class="material-symbols-outlined fill text-primary">work</span>
+              <span>2. 전문 경력 및 학력</span>
+            </button>
+          </nav>
+        </div>
+        <div class="px-6 space-y-4">
+          <button onclick="startAnalysis()" class="w-full bg-primary text-on-primary py-2.5 rounded-xl text-xs font-semibold hover:bg-primary/90 transition flex items-center justify-center gap-1 shadow-sm">
+            <span>저장 및 AI 분석 시작</span>
+            <span class="material-symbols-outlined text-[16px]">auto_awesome</span>
+          </button>
+          <div class="flex flex-col gap-2 pt-2 border-t border-outline-variant/40">
+            <a class="flex items-center gap-1.5 text-on-surface-variant text-xs hover:text-primary transition" href="company.html">
+              <span class="material-symbols-outlined text-[16px]">work</span>
+              채용공고 둘러보기
+            </a>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-1 lg:ml-64 p-4 md:p-8 lg:p-12 w-full max-w-4xl mx-auto flex flex-col pb-28 lg:pb-12">
+        <!-- Progress Bar -->
+        <div class="mb-8 w-full">
+          <div class="flex justify-between items-end mb-2">
+            <div>
+              <span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Step 2 of 2</span>
+              <h1 class="text-2xl md:text-3xl font-bold text-primary">전문 경력 및 경험</h1>
+            </div>
+            <span class="text-base font-bold text-primary">66%</span>
+          </div>
+          <div class="w-full bg-surface-container-highest rounded-full h-2 overflow-hidden">
+            <div class="bg-primary h-full rounded-full transition-all duration-500" style="width: 66%;"></div>
+          </div>
+        </div>
+
+        <!-- Form Container -->
+        <div class="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/60 p-6 md:p-8 space-y-6">
+          
+          <!-- Q1: Have you had a job before? -->
+          <div>
+            <label class="block text-sm font-bold text-on-surface mb-3">1. 전문직 또는 임상 경력을 보유하고 계십니까?</label>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="cursor-pointer">
+                <input checked class="peer sr-only" name="had_job" type="radio" value="yes" onchange="toggleExperienceSection(true)">
+                <div class="w-full py-3 px-4 rounded-xl border border-outline-variant text-center text-sm font-semibold peer-checked:bg-primary-container peer-checked:text-on-primary-container peer-checked:border-primary transition hover:bg-surface-container-low">
+                  예 (경력 보유)
+                </div>
+              </label>
+              <label class="cursor-pointer">
+                <input class="peer sr-only" name="had_job" type="radio" value="no" onchange="toggleExperienceSection(false)">
+                <div class="w-full py-3 px-4 rounded-xl border border-outline-variant text-center text-sm font-semibold peer-checked:bg-primary-container peer-checked:text-on-primary-container peer-checked:border-primary transition hover:bg-surface-container-low">
+                  신규 구직 (학력/면허 중심)
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Guidance Note -->
+          <div class="bg-surface-container-low border-l-4 border-primary p-4 rounded-r-xl flex gap-3 text-xs md:text-sm text-on-surface-variant">
+            <span class="material-symbols-outlined text-primary text-[20px] flex-shrink-0 mt-0.5">lightbulb</span>
+            <p>취R업 AI는 전문의, 전문직 자문, 연구원, 의료/바이오/금융 경력자의 핵심 역량을 자동 추출하여 고용 안정도가 검증된 일자리를 최우선 매칭합니다.</p>
+          </div>
+
+          <hr class="border-outline-variant/40">
+
+          <!-- Q2: Career History -->
+          <div id="experience-section" class="space-y-3">
+            <label class="block text-sm font-bold text-on-surface">2. 주요 경력 사항</label>
+            <div id="experience_list" class="space-y-3">
+              <!-- Item Row 1 -->
+              <div class="flex flex-col sm:flex-row gap-2.5 items-start sm:items-center bg-surface p-3.5 rounded-xl border border-outline-variant/60">
+                <div class="flex gap-2 w-full sm:w-auto">
+                  <select class="flex-1 sm:w-32 bg-white border border-outline-variant rounded-lg py-2 px-3 text-xs md:text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none">
+                    <option value="2011" selected>2011</option>
+                    <option value="2015">2015</option>
+                    <option value="2018">2018</option>
+                    <option value="2020">2020</option>
+                  </select>
+                  <span class="self-center text-on-surface-variant">-</span>
+                  <select class="flex-1 sm:w-32 bg-white border border-outline-variant rounded-lg py-2 px-3 text-xs md:text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none">
+                    <option value="present" selected>현재 (15년차)</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                  </select>
+                </div>
+                <select class="w-full sm:flex-1 bg-white border border-outline-variant rounded-lg py-2 px-3 text-xs md:text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none">
+                  <option value="medical" selected>흉부외과 전문의 및 중환자 임상 자문</option>
+                  <option value="healthcare">헬스케어 & 디지털 헬스 자문</option>
+                  <option value="qi">의료 질 관리(QI) 및 감염관리</option>
+                  <option value="biotech">바이오 신약 임상시험(CRO/PI)</option>
+                  <option value="other">기타 전문직</option>
+                </select>
+                <button onclick="this.closest('.flex-col').remove()" class="text-on-surface-variant hover:text-error transition p-1.5 self-end sm:self-center">
+                  <span class="material-symbols-outlined text-[20px]">delete</span>
+                </button>
+              </div>
+            </div>
+            <button onclick="addExperienceRow()" class="flex items-center gap-1.5 text-xs font-semibold text-primary hover:bg-primary-container/20 px-3.5 py-2 rounded-lg transition border border-primary/30">
+              <span class="material-symbols-outlined text-[16px]">add</span>
+              경력 추가
+            </button>
+          </div>
+
+          <hr class="border-outline-variant/40">
+
+          <!-- Q3: Highest Education Level -->
+          <div>
+            <label class="block text-sm font-bold text-on-surface mb-3">3. 최종 학력</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              <label class="flex items-center gap-3 p-3.5 border border-outline-variant rounded-xl cursor-pointer hover:bg-surface-container-low transition">
+                <input class="w-4 h-4 text-primary focus:ring-primary" name="education" type="radio" value="bachelors">
+                <span class="text-sm font-medium text-on-surface">대학교 졸업 (학사)</span>
+              </label>
+              <label class="flex items-center gap-3 p-3.5 border border-outline-variant rounded-xl cursor-pointer hover:bg-surface-container-low transition">
+                <input class="w-4 h-4 text-primary focus:ring-primary" name="education" type="radio" value="masters">
+                <span class="text-sm font-medium text-on-surface">석사 졸업</span>
+              </label>
+              <label class="flex items-center gap-3 p-3.5 border border-primary bg-secondary-container/20 rounded-xl cursor-pointer hover:bg-surface-container-low transition sm:col-span-2">
+                <input checked class="w-4 h-4 text-primary focus:ring-primary" name="education" type="radio" value="phd">
+                <span class="text-sm font-medium text-on-surface">의학박사 / 박사 학위 소지</span>
+              </label>
+            </div>
+            <!-- Major Input -->
+            <div id="major_container" class="mt-3">
+              <label class="block text-xs font-semibold text-on-surface-variant mb-1" for="major_input">세부 전공 / 전문 과목</label>
+              <input class="w-full bg-white border border-outline-variant rounded-xl py-2.5 px-3.5 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary focus:outline-none" id="major_input" placeholder="예: 흉부외과학, 심장혈관외과..." type="text" value="의학과 흉부외과 전공 (의학박사)">
+            </div>
+          </div>
+
+          <hr class="border-outline-variant/40">
+
+          <!-- Q4: Certifications Held -->
+          <div>
+            <label class="block text-sm font-bold text-on-surface mb-1">4. 면허 및 전문 자격증</label>
+            <p class="text-xs text-on-surface-variant mb-3">자격증 또는 면허명을 입력하고 Enter를 누르거나 추가하세요.</p>
+            <div class="flex gap-2 mb-3">
+              <input id="cert_input" class="flex-1 bg-white border border-outline-variant rounded-xl py-2.5 px-3.5 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:ring-2 focus:ring-primary focus:outline-none" placeholder="예: 의사면허, 흉부외과 전문의 자격증..." type="text" onkeydown="if(event.key==='Enter'){event.preventDefault(); addChip();}">
+              <button onclick="addChip()" class="px-4 py-2.5 bg-primary-container text-on-primary-container rounded-xl text-xs font-semibold hover:bg-primary-container/80 transition">추가</button>
+            </div>
+            <!-- Chips Container -->
+            <div id="chips_container" class="flex flex-wrap gap-2">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-high text-on-surface rounded-full text-xs font-medium border border-outline-variant/40">
+                의사면허증 (MED-2011-049281)
+                <button onclick="this.parentElement.remove()" class="hover:text-error"><span class="material-symbols-outlined text-[14px]">close</span></button>
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-high text-on-surface rounded-full text-xs font-medium border border-outline-variant/40">
+                흉부외과 전문의 자격
+                <button onclick="this.parentElement.remove()" class="hover:text-error"><span class="material-symbols-outlined text-[14px]">close</span></button>
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-high text-on-surface rounded-full text-xs font-medium border border-outline-variant/40">
+                의료기관 QI 전문가 과정 수료
+                <button onclick="this.parentElement.remove()" class="hover:text-error"><span class="material-symbols-outlined text-[14px]">close</span></button>
+              </span>
+            </div>
+          </div>
+
+          <!-- Bottom Action Buttons -->
+          <div class="flex justify-between items-center pt-4 border-t border-outline-variant/40">
+            <button onclick="navigateTo('screen-work-condition')" class="px-6 py-2.5 border border-outline/50 text-on-surface rounded-xl text-sm font-semibold hover:bg-surface-container-low transition">이전</button>
+            <button onclick="startAnalysis()" class="px-7 py-2.5 bg-primary text-on-primary rounded-xl text-sm font-semibold hover:bg-primary/90 active:scale-95 transition shadow-sm flex items-center gap-1.5">
+              <span>저장 및 AI 정밀 분석</span>
+              <span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- ==================== SCREEN 4: AI LOADING & ANALYSIS RESULT ==================== -->
+  <section id="screen-analysis" class="screen-view pt-16">
+    <main class="w-full max-w-2xl px-4 md:px-8 py-10 flex flex-col items-center justify-center mx-auto">
+      
+      <!-- Animated AI Processing Visual -->
+      <div id="ai-loading-indicator" class="relative w-36 h-36 mb-6 flex items-center justify-center">
+        <div class="absolute inset-0 rounded-full border-4 border-primary-container/30 pulse-ring"></div>
+        <div class="absolute inset-0 rounded-full border-4 border-primary-container/50 pulse-ring" style="animation-delay: 0.5s;"></div>
+        <div class="z-10 w-20 h-20 bg-primary text-on-primary rounded-2xl shadow-lg flex items-center justify-center">
+          <span class="material-symbols-outlined text-[36px] fill">auto_awesome</span>
+        </div>
+      </div>
+
+      <!-- Typography -->
+      <div class="text-center mb-6">
+        <h1 id="analysis-title" class="text-2xl md:text-3xl font-bold text-primary mb-2">
+          취R업 AI가 커리어 역량을 분석 중입니다
+        </h1>
+        <p id="analysis-subtitle" class="text-sm md:text-base text-on-surface-variant">
+          안정적인 고용 보장을 위해 핵심 임상 역량과 시장 최적 우량 기업을 매핑하고 있습니다...
+        </p>
+      </div>
+
+      <div id="analysis-results" class="w-full contents">
+      <!-- Live Competency Radar Preview -->
+      <div class="w-full bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant/60 p-6 mb-6">
+        <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
+          <h2 class="text-base font-bold text-primary flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-[20px]">insights</span>
+            <span>AI 핵심 역량 진단 스코어 (종합 91.2점)</span>
+          </h2>
+          <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            상위 3.8% 매칭
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          <div class="p-3 bg-surface rounded-xl border border-outline-variant/40">
+            <div class="flex justify-between text-xs font-bold mb-1">
+              <span>임상 통찰력 & 전문성</span>
+              <span class="text-primary">96점</span>
+            </div>
+            <div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+              <div class="bg-primary h-full rounded-full" style="width: 96%;"></div>
+            </div>
+          </div>
+          <div class="p-3 bg-surface rounded-xl border border-outline-variant/40">
+            <div class="flex justify-between text-xs font-bold mb-1">
+              <span>전략적 기획 & 거버넌스</span>
+              <span class="text-primary">92점</span>
+            </div>
+            <div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+              <div class="bg-primary h-full rounded-full" style="width: 92%;"></div>
+            </div>
+          </div>
+          <div class="p-3 bg-surface rounded-xl border border-outline-variant/40">
+            <div class="flex justify-between text-xs font-bold mb-1">
+              <span>리더십 & 조직 관리</span>
+              <span class="text-primary">88점</span>
+            </div>
+            <div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+              <div class="bg-primary h-full rounded-full" style="width: 88%;"></div>
+            </div>
+          </div>
+          <div class="p-3 bg-surface rounded-xl border border-outline-variant/40">
+            <div class="flex justify-between text-xs font-bold mb-1">
+              <span>소통 & 다학제 협업</span>
+              <span class="text-primary">85점</span>
+            </div>
+            <div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+              <div class="bg-primary h-full rounded-full" style="width: 85%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Matching Top 3 Recommended Companies -->
+        <h3 class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">실시간 최적 매칭 기업</h3>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-blue-700 text-white flex items-center justify-center font-bold text-[10px]">SN</span>
+              <span class="font-bold text-gray-900">서울대학교병원 본원</span>
+              <span class="text-gray-500">시니어 임상 컨설턴트</span>
+            </div>
+            <span class="font-extrabold text-blue-700">매칭률 98%</span>
+          </div>
+          <div class="flex items-center justify-between p-2.5 bg-surface rounded-xl border border-outline-variant/40 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-emerald-700 text-white flex items-center justify-center font-bold text-[10px]">SE</span>
+              <span class="font-bold text-gray-900">세브란스 체크업 센터</span>
+              <span class="text-gray-500">수석 검진 판독의</span>
+            </div>
+            <span class="font-extrabold text-emerald-700">매칭률 94%</span>
+          </div>
+          <div class="flex items-center justify-between p-2.5 bg-surface rounded-xl border border-outline-variant/40 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-indigo-700 text-white flex items-center justify-center font-bold text-[10px]">SM</span>
+              <span class="font-bold text-gray-900">삼성서울병원 미래의학연구원</span>
+              <span class="text-gray-500">임상시험 자문위원</span>
+            </div>
+            <span class="font-extrabold text-indigo-700">매칭률 89%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Indicator -->
+      <div class="w-full mb-6">
+        <div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+          <div id="analysis-progress-bar" class="bg-primary h-full rounded-full transition-all duration-700 ease-out" style="width: 100%;"></div>
+        </div>
+        <p id="analysis-progress-text" class="text-right text-xs font-semibold text-on-surface-variant mt-2">Firestore 동기화 및 100% 분석 완료</p>
+      </div>
+
+      <!-- Action Area -->
+      <div class="flex flex-col sm:flex-row gap-3 w-full justify-center">
+        <button onclick="navigateTo('screen-experience')" class="px-5 py-3 border border-outline/50 text-on-surface font-semibold text-xs rounded-xl hover:bg-surface-container-low transition text-center">
+          진단 정보 다시 수정하기
+        </button>
+        <button onclick="viewDetailedReport()" class="px-7 py-3 bg-primary text-on-primary font-bold text-xs rounded-xl shadow-sm hover:bg-primary/90 active:scale-95 transition text-center flex items-center justify-center gap-2">
+          <span>맞춤 추천 채용공고 보기</span>
+          <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+        </button>
+      </div>
+      </div>
+    </main>
+  </section>
+
+  <div id="app-footer"></div>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 px-4 bg-surface-container-lowest border-t border-outline-variant shadow-lg lg:hidden">
+    <button onclick="navigatePrev()" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition p-1">
+      <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+      <span class="text-[10px] mt-0.5">이전</span>
+    </button>
+    <button onclick="navigateNext()" class="flex flex-col items-center justify-center bg-primary text-on-primary rounded-xl px-4 py-1.5 shadow-sm active:scale-95 transition">
+      <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+      <span class="text-[10px]">다음</span>
+    </button>
+    <button onclick="saveToDatabase()" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition p-1">
+      <span class="material-symbols-outlined text-[20px]">save</span>
+      <span class="text-[10px] mt-0.5">저장</span>
+    </button>
+    <button onclick="location.href='index.html'" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition p-1">
+      <span class="material-symbols-outlined text-[20px]">home</span>
+      <span class="text-[10px] mt-0.5">홈으로</span>
+    </button>
+  </nav>
+
+  <!-- Interactive Logic & Firebase Integration Script -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCrW6HXGjVbyk_0k9SKRHSRs629ol0dnYo",
+      authDomain: "gen-lang-client-0529162863.firebaseapp.com",
+      projectId: "gen-lang-client-0529162863",
+      storageBucket: "gen-lang-client-0529162863.firebasestorage.app",
+      messagingSenderId: "819805526031",
+      appId: "1:819805526031:web:4adae67390cd8f3b162b7a"
+    };
+
+    // Firestore 연결은 assets/firebase-db.js가 관리한다
+    const db = (window.ChwireupDB && window.ChwireupDB.db()) || null;
+
+    const screens = ['screen-intro', 'screen-work-condition', 'screen-experience', 'screen-analysis'];
+    let currentScreenIndex = 0;
+
+    function navigateTo(screenId) {
+      document.querySelectorAll('.screen-view').forEach(view => view.classList.remove('active'));
+      const target = document.getElementById(screenId);
+      if (target) {
+        target.classList.add('active');
+        // 단계가 바뀔 때마다 같은 결로 다시 올라오게 한다
+        target.classList.remove('view-swap');
+        void target.offsetWidth;
+        target.classList.add('view-swap');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      currentScreenIndex = screens.indexOf(screenId);
+      updateNavHighlight();
+    }
+
+    function navigateNext() {
+      if (currentScreenIndex < screens.length - 1) {
+        navigateTo(screens[currentScreenIndex + 1]);
+      }
+    }
+
+    function navigatePrev() {
+      if (currentScreenIndex > 0) {
+        navigateTo(screens[currentScreenIndex - 1]);
+      }
+    }
+
+    function updateNavHighlight() {
+      const btnMap = {
+        'screen-intro': 'nav-btn-intro',
+        'screen-work-condition': 'nav-btn-work',
+        'screen-experience': 'nav-btn-exp',
+        'screen-analysis': 'nav-btn-analysis'
+      };
+      Object.entries(btnMap).forEach(([scr, btnId]) => {
+        const el = document.getElementById(btnId);
+        if (el) {
+          if (screens[currentScreenIndex] === scr) {
+            el.className = 'px-2.5 py-1 rounded bg-primary text-white font-bold transition shadow-sm';
+          } else {
+            el.className = 'px-2.5 py-1 rounded hover:bg-white transition text-on-surface-variant';
+          }
+        }
+      });
+    }
+
+    function toggleExperienceSection(show) {
+      const section = document.getElementById('experience-section');
+      if (show) {
+        section.classList.remove('hidden');
+      } else {
+        section.classList.add('hidden');
+      }
+    }
+
+    function addChip() {
+      const input = document.getElementById('cert_input');
+      const val = input.value.trim();
+      if (!val) return;
+      
+      const container = document.getElementById('chips_container');
+      const span = document.createElement('span');
+      span.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-high text-on-surface rounded-full text-xs font-medium border border-outline-variant/40';
+      span.innerHTML = `${val} <button onclick="this.parentElement.remove()" class="hover:text-error"><span class="material-symbols-outlined text-[14px]">close</span></button>`;
+      container.appendChild(span);
+      input.value = '';
+    }
+
+    function addExperienceRow() {
+      const list = document.getElementById('experience_list');
+      const row = document.createElement('div');
+      row.className = 'flex flex-col sm:flex-row gap-2.5 items-start sm:items-center bg-surface p-3.5 rounded-xl border border-outline-variant/60';
+      row.innerHTML = `
+        <div class="flex gap-2 w-full sm:w-auto">
+          <select class="flex-1 sm:w-32 bg-white border border-outline-variant rounded-lg py-2 px-3 text-xs md:text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none">
+            <option value="2026">2026</option>
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+            <option value="2020" selected>2020</option>
+          </select>
+          <span class="self-center text-on-surface-variant">-</span>
+          <select class="flex-1 sm:w-32 bg-white border border-outline-variant rounded-lg py-2 px-3 text-xs md:text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none">
+            <option value="present" selected>현재</option>
+            <option value="2026">2026</option>
+          </select>
+        </div>
+        <select class="w-full sm:flex-1 bg-white border border-outline-variant rounded-lg py-2 px-3 text-xs md:text-sm text-on-surface focus:ring-2 focus:ring-primary focus:outline-none">
+          <option value="medical">의료/임상 전문의</option>
+          <option value="healthcare" selected>디지털 헬스케어 & 의료 AI 자문</option>
+          <option value="qi">의료 질 관리 및 적정진료</option>
+          <option value="finance">금융/산업보건 자문</option>
+          <option value="other">기타</option>
+        </select>
+        <button onclick="this.closest('.flex-col').remove()" class="text-on-surface-variant hover:text-error transition p-1.5 self-end sm:self-center">
+          <span class="material-symbols-outlined text-[20px]">delete</span>
+        </button>
+      `;
+      list.appendChild(row);
+    }
+
+    async function saveToDatabase() {
+      if (db) {
+        try {
+          const reportDoc = {
+            id: 'report-' + Date.now(),
+            userId: 'user_kim_gunwoo',
+            title: '취R업 AI 정밀 역량 진단 리포트',
+            matchPercentage: 98,
+            topMatchCompany: '서울대학교병원 본원',
+            generatedDate: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }),
+            summary: '흉부외과 15년 임상 경력 및 중환자 관리 통찰력 기반 최우수 등급. 서울대병원, 세브란스, 삼성서울병원 포지션에 최적 매칭됩니다.',
+            createdAt: new Date().toISOString()
+          };
+          await db.collection('ai_reports').doc(reportDoc.id).set(reportDoc);
+          await db.collection('users').doc('user_kim_gunwoo').set({
+            aptitudeScores: {
+              leadership: 88,
+              clinicalInsight: 96,
+              strategicPlanning: 92,
+              communication: 85,
+              adaptability: 84
+            },
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+        } catch (e) {
+          console.warn("Firestore sync in assessment:", e);
+        }
+      }
+    }
+
+    // 2단계에서 분석을 누르면 결과를 바로 띄우지 않는다.
+    // 로딩 화면을 먼저 보여주고, 저장이 끝나면 결과로 전환한다.
+    async function startAnalysis() {
+      navigateTo('screen-analysis');
+
+      const results = document.getElementById('analysis-results');
+      const title = document.getElementById('analysis-title');
+      const subtitle = document.getElementById('analysis-subtitle');
+      const loader = document.getElementById('ai-loading-indicator');
+      const bar = document.getElementById('analysis-progress-bar');
+      const barText = document.getElementById('analysis-progress-text');
+
+      if (results) results.style.display = 'none';
+      if (loader) loader.style.display = 'flex';
+      if (title) title.textContent = 'AI가 분석중입니다';
+      if (subtitle) subtitle.textContent = '입력한 경력 중 자동화가 대신하기 어려운 부분을 추리는 중입니다.';
+
+      const steps = [
+        { at: 0,    pct: 12, msg: '임상 경력과 자격 정보를 읽는 중' },
+        { at: 700,  pct: 38, msg: '근무 조건 선호를 반영하는 중' },
+        { at: 1500, pct: 66, msg: '기업 안정성 지표와 대조하는 중' },
+        { at: 2300, pct: 88, msg: '매칭 점수를 계산하는 중' }
+      ];
+      const timers = steps.map((s) =>
+        setTimeout(() => {
+          if (bar) bar.style.width = s.pct + '%';
+          if (barText) barText.textContent = s.msg + ' · ' + s.pct + '%';
+        }, s.at)
+      );
+
+      // 저장은 기다리되, 네트워크가 늦어도 화면은 붙잡아 두지 않는다.
+      const saved = Promise.race([
+        saveToDatabase().catch(() => {}),
+        new Promise((r) => setTimeout(r, 4000))
+      ]);
+      // 저장이 즉시 끝나도 화면이 튀지 않도록 최소 3초는 로딩을 유지한다
+      await Promise.all([saved, new Promise((r) => setTimeout(r, 3000))]);
+
+      timers.forEach(clearTimeout);
+
+      if (bar) bar.style.width = '100%';
+      if (barText) barText.textContent = '분석 완료 · 100%';
+      if (loader) loader.style.display = 'none';
+      if (title) title.textContent = '분석이 끝났습니다';
+      if (subtitle) subtitle.textContent = '기계가 대신하기 어려운 역량과, 그에 맞는 자리를 아래에 정리했습니다.';
+      if (results) results.style.display = '';
+    }
+
+    function viewDetailedReport() {
+      // 진단이 끝나면 바로 추천 공고 목록으로 보낸다
+      window.location.href = 'company.html';
+    }
+
+    // Initialize
+    updateNavHighlight();
+  </script>
+
+  <script src="assets/chrome.js"></script>
+  <script src="assets/auth-store.js"></script>
+  <script>
+    // 언어 선택: i18n이 뜬 뒤에 목록을 채운다
+    document.addEventListener('DOMContentLoaded', function () {
+      var sel = document.getElementById('lang-select');
+      var note = document.getElementById('lang-note');
+      if (!sel || !window.ChwireupI18n) return;
+
+      window.ChwireupI18n.langs.forEach(function (l) {
+        var o = document.createElement('option');
+        o.value = l.code;
+        o.textContent = l.label;
+        sel.appendChild(o);
+      });
+      sel.value = window.ChwireupI18n.current();
+
+      var describe = function () {
+        var hit = window.ChwireupI18n.langs.filter(function (l) { return l.code === sel.value; })[0];
+        if (hit && note) note.textContent = hit.note + ' · 모든 페이지에 적용됩니다.';
+      };
+      describe();
+
+      sel.addEventListener('change', function () {
+        window.ChwireupI18n.set(sel.value);
+        describe();
+      });
+
+      var name = window.ChwireupAuth && window.ChwireupAuth.name();
+      if (name) document.getElementById('profile-name').textContent = name;
+    });
+  </script>
+  <script src="assets/i18n.js"></script>
+</body>
+</html>

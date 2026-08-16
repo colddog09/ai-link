@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>취R업 | 기업 내페이지 · 공고 관리</title>
+  <meta name="description" content="기업 회원 페이지. 채용공고를 등록하고 등록한 공고를 관리합니다." />
+  <link rel="icon" href="assets/favicon.png" />
+
+  <link rel="stylesheet" href="assets/theme.css" />
+  <script src="assets/theme.js"></script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+  <!-- Firebase (연결되면 공고를 함께 기록한다) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <script>
+    tailwind.config = { darkMode: 'class' }
+  </script>
+
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    * { font-family: Pretendard, -apple-system, BlinkMacSystemFont, sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400; }
+    body { background: #eef2f8; }
+    html.dark body { background: #070d18; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col text-gray-900">
+
+  <div id="app-header"></div>
+
+  <main class="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- 로그인 안 한 경우 -->
+    <section id="gate" class="hidden bg-white border border-gray-200 rounded-3xl p-10 text-center">
+      <span class="material-symbols-outlined text-[36px] text-gray-400">lock</span>
+      <h1 class="text-lg font-black mt-3 mb-1.5">기업 회원으로 로그인해 주세요</h1>
+      <p class="text-xs text-gray-500 mb-6">공고 등록과 지원자 확인은 기업 계정에서만 가능합니다.</p>
+      <a href="ls.html?role=company" class="inline-block px-5 py-3 bg-[#002045] text-white rounded-xl text-xs font-bold">
+        기업 회원 로그인
+      </a>
+    </section>
+
+    <!-- 기업 페이지 -->
+    <section id="panel" class="hidden space-y-6">
+      <header class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p class="text-[11px] font-bold text-gray-500 mb-1">기업 내페이지</p>
+          <h1 class="text-2xl font-black" id="company-name">기업 회원</h1>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold" id="db-status">로컬 저장</span>
+        </div>
+      </header>
+
+      <div class="grid lg:grid-cols-[1fr_1.1fr] gap-6 items-start">
+
+        <!-- 공고 등록 -->
+        <div class="bg-white border border-gray-200 rounded-3xl p-6">
+          <h2 class="text-base font-black mb-1">공고 등록</h2>
+          <p class="text-xs text-gray-500 mb-5">등록하면 채용공고 목록에 바로 올라갑니다. 사람의 판단이 필요한 직무일수록 매칭이 빠릅니다.</p>
+
+          <form id="job-form" class="space-y-3.5">
+            <div>
+              <label class="text-xs font-bold text-gray-600 mb-1.5 block" for="f-title">공고 제목</label>
+              <input id="f-title" required placeholder="예: 내과 전문의 (건강검진센터)"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs font-bold text-gray-600 mb-1.5 block" for="f-location">근무 지역</label>
+                <input id="f-location" required placeholder="서울 종로구"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-gray-600 mb-1.5 block" for="f-exp">요구 경력</label>
+                <input id="f-exp" placeholder="경력 5년↑"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-xs font-bold text-gray-600 mb-1.5 block" for="f-salary">연봉 범위</label>
+                <input id="f-salary" required placeholder="1.2억 ~ 1.5억"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-gray-600 mb-1.5 block" for="f-deadline">마감</label>
+                <input id="f-deadline" placeholder="마감 D-14 또는 상시 채용"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" />
+              </div>
+            </div>
+
+            <div>
+              <label class="text-xs font-bold text-gray-600 mb-1.5 block" for="f-specialty">전문 분야</label>
+              <input id="f-specialty" placeholder="예: 소화기내과, 산업보건"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            </div>
+
+            <div>
+              <label class="text-xs font-bold text-gray-600 mb-1.5 block" for="f-image">대표 이미지 주소 (선택)</label>
+              <input id="f-image" placeholder="https://..."
+                class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600" />
+            </div>
+
+            <div id="job-alert" class="hidden p-3 rounded-xl text-xs bg-emerald-50 text-emerald-700 border border-emerald-100"></div>
+
+            <button type="submit"
+              class="w-full h-12 bg-[#002045] text-white rounded-xl text-sm font-bold hover:opacity-90 active:scale-95 transition flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-[18px]">add</span>
+              <span>등록하기</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- 등록한 공고 -->
+        <div class="bg-white border border-gray-200 rounded-3xl p-6">
+          <div class="flex items-center justify-between mb-5">
+            <h2 class="text-base font-black">내 공고</h2>
+            <a href="company.html" class="text-xs font-bold text-[#002045] hover:underline">목록에서 보기</a>
+          </div>
+          <div id="my-jobs" class="space-y-3"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="app-footer"></div>
+
+  <script src="assets/firebase-db.js"></script>
+  <script src="assets/chrome.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="assets/auth-store.js"></script>
+  <script src="assets/jobs-store.js"></script>
+  <script src="assets/i18n.js"></script>
+  <script>
+    (function () {
+      var role = window.ChwireupAuth.role();
+      var name = window.ChwireupAuth.name() || '기업 회원';
+
+      if (role !== 'company') {
+        document.getElementById('gate').classList.remove('hidden');
+        return;
+      }
+
+      document.getElementById('panel').classList.remove('hidden');
+      document.getElementById('company-name').textContent = name;
+
+      // 계정 저장소 상태 표시
+      var onFirebase = window.ChwireupAccounts && window.ChwireupAccounts.isFirebase();
+      document.getElementById('db-status').textContent = onFirebase
+        ? 'Firestore 연동'
+        : '로컬 저장 (데모)';
+
+      function renderJobs() {
+        var box = document.getElementById('my-jobs');
+        var jobs = window.ChwireupJobs.byOwner(name);
+
+        if (!jobs.length) {
+          box.innerHTML =
+            '<div class="border border-dashed border-gray-300 rounded-2xl p-8 text-center">' +
+            '<p class="text-xs text-gray-500">등록된 공고가 없습니다. 왼쪽에서 첫 공고를 올려 보세요.</p>' +
+            '</div>';
+          return;
+        }
+
+        box.innerHTML = jobs
+          .map(function (j) {
+            return (
+              '<div class="border border-gray-200 rounded-2xl p-4">' +
+              '<div class="flex items-start justify-between gap-3">' +
+              '<div class="min-w-0">' +
+              '<p class="text-sm font-bold truncate">' + j.title + '</p>' +
+              '<p class="text-[11px] text-gray-500 mt-0.5">' + j.location + ' · ' + j.salaryRange + ' · ' + (j.deadline || '상시 채용') + '</p>' +
+              '</div>' +
+              '<button data-remove="' + j.id + '" class="text-[11px] font-bold text-red-600 hover:underline shrink-0">삭제</button>' +
+              '</div>' +
+              '<a href="detail.html?jobId=' + j.id + '" class="inline-block mt-3 text-[11px] font-bold text-[#002045] hover:underline">공고 페이지 열기</a>' +
+              '</div>'
+            );
+          })
+          .join('');
+      }
+
+      document.getElementById('my-jobs').addEventListener('click', function (e) {
+        var id = e.target.getAttribute && e.target.getAttribute('data-remove');
+        if (!id) return;
+        window.ChwireupJobs.remove(id);
+        renderJobs();
+      });
+
+      document.getElementById('job-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var v = function (id) { return document.getElementById(id).value.trim(); };
+
+        var job = {
+          companyName: name,
+          owner: name,
+          title: v('f-title'),
+          location: v('f-location'),
+          experience: v('f-exp') || '경력 무관',
+          salaryRange: v('f-salary'),
+          deadline: v('f-deadline') || '상시 채용',
+          specialty: v('f-specialty') || '',
+          matchRate: 80
+        };
+        var img = v('f-image');
+        if (img) job.imageUrl = img;
+
+        window.ChwireupJobs.add(job);
+
+        var box = document.getElementById('job-alert');
+        box.textContent = '공고를 등록했습니다. 채용공고 목록 맨 앞에 올라갑니다.';
+        box.classList.remove('hidden');
+        setTimeout(function () { box.classList.add('hidden'); }, 4000);
+
+        e.target.reset();
+        renderJobs();
+      });
+
+      renderJobs();
+    })();
+  </script>
+</body>
+</html>

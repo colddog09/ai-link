@@ -1,0 +1,102 @@
+{
+  "entities": {
+    "jobs": {
+      "title": "채용 공고 및 기업 정보",
+      "description": "각 기업의 채용 공고, 세부 직무 조건, 고용 안정도 지표 및 AI 매칭 정보",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "채용 공고 고유 식별자" },
+        "companyName": { "type": "string", "description": "기업명" },
+        "verifiedCompany": { "type": "boolean", "description": "인증 기업 여부" },
+        "title": { "type": "string", "description": "직무명/공고 제목" },
+        "matchScore": { "type": "number", "description": "AI 매칭 점수 (1~100)" },
+        "stabilityScore": { "type": "number", "description": "고용 안정도 점수 (1~100)" },
+        "salaryKRW": { "type": "string", "description": "예상 연봉 범위" },
+        "location": { "type": "string", "description": "근무지 위치" },
+        "employmentType": { "type": "string", "description": "고용 형태" },
+        "experienceLevel": { "type": "string", "description": "필요 경력 요건" },
+        "avgTenureYears": { "type": "number", "description": "평균 근속년수" },
+        "avgTenurePercentile": { "type": "string", "description": "근속년수 업계 백분위" },
+        "salaryPercentile": { "type": "string", "description": "연봉 상위 백분위" },
+        "stabilityGrade": { "type": "string", "description": "기업 안정도 등급" },
+        "creditRating": { "type": "string", "description": "신용평가 등급" },
+        "retentionRate": { "type": "string", "description": "고용 유지율" },
+        "regularWorkerRate": { "type": "string", "description": "정규직 비율" },
+        "aiInsight": { "type": "object", "description": "AI 역량 분석 요약 및 매칭 근거" },
+        "details": { "type": "object", "description": "직무 상세 내용 및 우대 조건" },
+        "recruiter": { "type": "object", "description": "채용 담당자 프로필 및 안심번호" },
+        "imageUrl": { "type": "string", "description": "대표 이미지 URL" },
+        "updatedAt": { "type": "string", "description": "업데이트 일시" }
+      },
+      "required": ["id", "companyName", "title"]
+    },
+    "users": {
+      "title": "사용자 개인 프로필 및 설정",
+      "description": "사용자의 전문의 면허, 역량 분석 점수, 북마크한 공고 및 지원 내역",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "사용자 고유 UID" },
+        "name": { "type": "string", "description": "사용자 성명" },
+        "email": { "type": "string", "description": "이메일 주소" },
+        "phone": { "type": "string", "description": "연락처" },
+        "licenseNumber": { "type": "string", "description": "의사/전문의 면허 번호" },
+        "specialty": { "type": "string", "description": "전문 진료과 및 세부 분과" },
+        "experienceYears": { "type": "number", "description": "총 임상 경력 연수" },
+        "locationPreference": { "type": "string", "description": "희망 근무 지역" },
+        "preferredWorkType": { "type": "string", "description": "선호 근무 형태" },
+        "googleAvatar": { "type": "string", "description": "프로필 이미지 URL" },
+        "savedJobIds": { "type": "array", "items": { "type": "string" }, "description": "관심 저장한 공고 ID 목록" },
+        "appliedJobIds": { "type": "array", "items": { "type": "string" }, "description": "지원 완료한 공고 ID 목록" },
+        "aptitudeScores": { "type": "object", "description": "5대 핵심 역량 진단 점수" },
+        "updatedAt": { "type": "string", "description": "마지막 수정 일시" }
+      },
+      "required": ["uid", "name", "email"]
+    },
+    "applications": {
+      "title": "입사 지원 내역",
+      "description": "사용자가 각 기업에 제출한 지원서, 상태 및 이력서 요약",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "지원 고유 식별자" },
+        "userId": { "type": "string", "description": "지원자 사용자 ID" },
+        "jobId": { "type": "string", "description": "지원한 채용 공고 ID" },
+        "jobTitle": { "type": "string", "description": "공고 제목" },
+        "companyName": { "type": "string", "description": "기업명" },
+        "appliedAt": { "type": "string", "description": "지원 일자" },
+        "status": { "type": "string", "description": "심사 진행 상태" },
+        "coverNote": { "type": "string", "description": "간단 자기소개 및 전달사항" },
+        "resumeSummary": { "type": "string", "description": "요약 이력 정보" }
+      },
+      "required": ["id", "userId", "jobId", "status"]
+    },
+    "messages": {
+      "title": "기업 담당자 1:1 소통 메시지",
+      "description": "각 기업 채용 담당자와 구직자 간의 실시간 채팅 대화 기록",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "메시지 고유 식별자" },
+        "userId": { "type": "string", "description": "대화 참여자 사용자 ID" },
+        "jobId": { "type": "string", "description": "대상 기업/채용 공고 ID" },
+        "sender": { "type": "string", "description": "발신자 ('user' 또는 'recruiter')" },
+        "text": { "type": "string", "description": "메시지 내용" },
+        "timestamp": { "type": "string", "description": "표시 시간" },
+        "createdAt": { "type": "string", "description": "생성 타임스탬프" }
+      },
+      "required": ["id", "jobId", "sender", "text"]
+    },
+    "ai_reports": {
+      "title": "저장된 AI 역량 분석 리포트",
+      "description": "사용자가 저장한 역량 진단 및 맞춤 추천 분석 결과",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "리포트 고유 식별자" },
+        "userId": { "type": "string", "description": "소유자 사용자 ID" },
+        "type": { "type": "string", "description": "리포트 유형" },
+        "title": { "type": "string", "description": "리포트 제목" },
+        "subtitle": { "type": "string", "description": "리포트 상세 조건 및 요약" },
+        "savedAt": { "type": "string", "description": "저장 일시" }
+      },
+      "required": ["id", "title", "savedAt"]
+    }
+  }
+}

@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>취R업 | 전문직 AI 매칭 & 기업 안정성 안심 채용 플랫폼</title>
+  <link rel="icon" href="assets/favicon.png" />
+  <link rel="stylesheet" href="assets/theme.css" />
+  <script src="assets/theme.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <meta name="description" content="취R업 - AI 역량·적성 분석, 기업 정보 열람, 1인 1계정 인증 및 0507 안심 소통 올인원 채용 플랫폼" />
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#f0f5ff',
+              100: '#e0ecff',
+              600: '#1d4ed8',
+              700: '#0f3b82',
+              800: '#0c2f68',
+              900: '#081f44',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & ReactDOM 18 UMD -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel Standalone for inline JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Firebase 10 Compat SDK CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+  <!-- Custom Styles -->
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    * {
+      font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+    }
+    /* Smooth custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* 가독성: 기본 유틸리티가 너무 작아 한 단계씩 키운다 */
+    body { -webkit-font-smoothing: antialiased; }
+    .text-xs { font-size: 13px !important; line-height: 1.8 !important; }
+    .text-sm { font-size: 14.5px !important; line-height: 1.78 !important; }
+    .text-base { font-size: 16.5px !important; line-height: 1.7 !important; }
+    .text-\[10px\] { font-size: 11px !important; }
+    .text-\[11px\] { font-size: 12px !important; }
+    p, li { letter-spacing: -0.005em; }
+  </style>
+</head>
+<body class="bg-[#f8fafc] text-gray-900 selection:bg-blue-100 selection:text-blue-900 min-h-screen flex flex-col">
+  <div id="app-header"></div>
+  <!-- Root React Mount Container -->
+  <div id="root"></div>
+
+  <script src="assets/firebase-db.js"></script>
+  <script src="assets/jobs-data.js"></script>
+  <script src="assets/jobs-store.js"></script>
+
+  <!-- Single All-in-One Integrated Application Script -->
+  <script type="text/babel">
+    const { useState, useMemo, useEffect } = React;
+
+    // ==========================================
+    // 1. INLINE SVG ICONS (Zero external bundle dependency)
+    // ==========================================
+    const Icon = ({ name, className = "w-4 h-4" }) => {
+      switch (name) {
+        case 'sparkles':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+            </svg>
+          );
+        case 'building':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          );
+        case 'shield-check':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          );
+        case 'banknote':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          );
+        case 'map-pin':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          );
+        case 'briefcase':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          );
+        case 'graduation-cap':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path d="M12 14l9-5-9-5-9 5 9 5z" />
+              <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+            </svg>
+          );
+        case 'trending-up':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          );
+        case 'message-square':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          );
+        case 'phone':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+          );
+        case 'bookmark':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+          );
+        case 'bookmark-check':
+          return (
+            <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+              <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+          );
+        case 'check':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          );
+        case 'search':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          );
+        case 'sliders':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+          );
+        case 'trash':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          );
+        case 'x':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          );
+        case 'send':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          );
+        default:
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+            </svg>
+          );
+      }
+    };
+
+    // ==========================================
+    // 2. ALL MOCK DATA & PROFILES
+    // ==========================================
+    const MOCK_JOBS = [
+      {
+        id: 'snuh-senior-medical-consultant',
+        companyName: '서울대학교병원 (SNUH)',
+        verifiedCompany: true,
+        title: '시니어 의료 컨설턴트 (전문의 자문역)',
+        matchScore: 94,
+        stabilityScore: 88,
+        salaryKRW: '1.2억 ~ 1.5억',
+        location: '서울 종로구 (대학로)',
+        employmentType: '정규직 / 유연근무 협의',
+        experienceLevel: '전문의 10년 이상 (15년 경력 최적 매칭)',
+        avgTenureYears: 8.5,
+        avgTenurePercentile: '업계 상위 15%',
+        salaryPercentile: '상위 10% (1.2억원 이상)',
+        stabilityGrade: 'AAA (공공의료/상급종합병원)',
+        creditRating: 'A1',
+        retentionRate: '98.2%',
+        regularWorkerRate: '99.4%',
+        aiInsight: {
+          summary: '15년간의 흉부외과 임상 전문성 및 병원 행정 자문 이력이 서울대병원 의료혁신추진단 자문역 포지션과 94%의 높은 적합도를 나타냅니다. 근무 형태 또한 주 4.5일 또는 유연 근무 선택이 가능하여 원장님의 학술 및 대외 자문 활동과 최적의 균형을 이룹니다.',
+          coreCompetencyMatch: '흉부외과 수술/임상 프로토콜 감수 역량 (상위 5% 일치)',
+          growthPotential: '상급종합병원 진료 표준화 거버넌스 총괄 및 시니어 리더십 발휘',
+          matchedKeywords: ['의료자문', '임상프로토콜', '시니어전문의', '상급종합병원', '유연근무'],
+        },
+        details: {
+          mainResponsibilities: [
+            '중증 심혈관·흉부 질환 임상 질 관리 및 표준 진료 프로토콜 최신화 자문',
+            '신임 전문의 및 전임의 임상 수기 코칭 및 다학제 컨퍼런스 주재',
+            '공공의료 및 지역 연계 의료 협력 네트워크 전략 방향성 심의',
+            '병원 경영진 및 의료진 간 임상 의사결정 중재 및 거버넌스 지원',
+          ],
+          qualifications: [
+            '의과대학 졸업 및 해당 진료과(흉부외과/내과/외과계) 전문의 면허 소지자',
+            '종합병원급 이상 임상 경력 10년 이상 보유자',
+            '의료 분쟁 예방 및 진료 지침 표준화에 대한 이해도가 높은 분',
+          ],
+          preferredQualifications: [
+            '대학병원 조교수급 이상 재직 이력 또는 병원 보직(과장, 부원장 등) 경험자',
+            '의학 학회 임원 또는 정책 심의 위원회 활동 경력자',
+          ],
+          benefits: [
+            '연구 자문실 및 개인 연구 보조 연구원 배정',
+            '국내외 학술대회 참가비 및 연수 지원 (연 1,000만원 한도)',
+            '본인 및 직계가족 서울대병원 진료비 감면 혜택 (최대 70%)',
+            '교직원 수준의 복지포인트 및 주차 전용 구역 제공',
+          ],
+          workingHours: '주 4일~5일 유연 선택 근무 (연구일 지정 가능, 09:00 ~ 17:30)',
+        },
+        recruiter: {
+          name: '박지현 팀장',
+          title: '인재개발실 채용팀',
+          avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+          responseTime: '보통 1시간 이내 응답',
+          safePhone: '0507-1384-9921',
+        },
+      },
+      {
+        id: 'severance-checkup-director',
+        companyName: '세브란스 체크업 센터',
+        verifiedCompany: true,
+        title: '내과 전문의 (건강검진센터 소장급)',
+        matchScore: 91,
+        stabilityScore: 90,
+        salaryKRW: '1.2억 ~ 1.6억',
+        location: '서울 중구 (남대문/시청)',
+        employmentType: '정규직 / 주 4일~5일 협의',
+        experienceLevel: '전문의 10년 이상 (소화기/순환기 내과)',
+        avgTenureYears: 8.8,
+        avgTenurePercentile: '업계 상위 12%',
+        salaryPercentile: '상위 8% (1.2억~1.6억원)',
+        stabilityGrade: 'AAA (연세의료원)',
+        creditRating: 'A1',
+        retentionRate: '98.5%',
+        regularWorkerRate: '99.5%',
+        aiInsight: {
+          summary: '풍부한 임상 진료 경력 및 환자 상담 역량을 바탕으로 프리미엄 건강검진센터의 내시경·판독 질 관리 및 VIP 종합 검진 자문을 이끌 적임자로 91% 매칭되었습니다. 도심 핵심 입지에 위치하며 야간 당직이 일체 없습니다.',
+          coreCompetencyMatch: '소화기/순환기 질환 조기 진단 및 검진 프로토콜 고도화',
+          growthPotential: '체크업 센터 총괄 원장 승격 및 VIP 검진 패키지 자문위원',
+          matchedKeywords: ['건강검진', '소장급', '세브란스', '당직없음', '도심근무'],
+        },
+        details: {
+          mainResponsibilities: [
+            'VIP 종합건강검진 정밀 결과 판독 및 심층 사후 상담',
+            '위·대장 수면 내시경 시술 및 검진 안전 프로토콜 감수',
+            '검진센터 내 의료진 임상 질 관리(QI) 및 최신 진단 가이드라인 교육',
+          ],
+          qualifications: [
+            '내과(소화기/순환기) 또는 가정의학과 전문의 면허 소지자',
+            '임상 경력 10년 이상 또는 종합검진센터 유경험자',
+          ],
+          preferredQualifications: [
+            '소화기내시경 세부전문의 또는 분과전문의 자격자 우대',
+            '검진센터 보직(원장, 부소장) 경험자 우대',
+          ],
+          benefits: [
+            '연세의료원 본원 및 체크업 진료비 감면 혜택 (본인 80%, 가족 50%)',
+            '야간 당직 및 휴일 진료 전면 배제 (워라밸 최상)',
+            '단독 진료 상담실 및 고급 전용 주차 공간 제공',
+          ],
+          workingHours: '주 4일~5일 선택제 (평일 08:30 ~ 16:30, 토요일 순환 08:30 ~ 12:30)',
+        },
+        recruiter: {
+          name: '최윤진 부장',
+          title: '연세의료원 인사기획팀',
+          avatar: 'https://images.unsplash.com/photo-1594824813588-4c91979b008d?auto=format&fit=crop&q=80&w=200',
+          responseTime: '보통 1시간 이내 응답',
+          safePhone: '0507-1399-4412',
+        },
+      },
+      {
+        id: 'samsung-medical-advisor',
+        companyName: '삼성서울병원 (SMC)',
+        verifiedCompany: true,
+        title: '미래의학연구원 시니어 임상 연구위원',
+        matchScore: 89,
+        stabilityScore: 92,
+        salaryKRW: '1.3억 ~ 1.6억',
+        location: '서울 강남구 일원동',
+        employmentType: '정규직 (연구 상근 / 주 4일 가능)',
+        experienceLevel: '전문의 12년 이상',
+        avgTenureYears: 9.1,
+        avgTenurePercentile: '업계 상위 10%',
+        salaryPercentile: '상위 10% (1.3억원 수준)',
+        stabilityGrade: 'AAA (삼성의료재단)',
+        creditRating: 'A1+',
+        retentionRate: '98.9%',
+        regularWorkerRate: '99.8%',
+        aiInsight: {
+          summary: '정밀의학 및 세포 유전자 치료제 임상 가이드라인 수립을 담당하는 연구위원 포지션입니다. 원내 최고 수준의 연구 인프라와 단독 연구실이 제공됩니다.',
+          coreCompetencyMatch: '중증질환 임상 연구 및 논문 감수 전문성 일치',
+          growthPotential: '미래의학연구원 임상시험센터 자문위원장 위촉',
+          matchedKeywords: ['미래의학', '정밀의료', '강남구', '안정성최상', '연구위원'],
+        },
+        details: {
+          mainResponsibilities: [
+            '첨단 바이오 치료제 및 세포치료제 임상시험 프로토콜 심의',
+            '국책 연구과제 기획 및 산학연 협력 프로젝트 의학 총괄',
+            '연구자 주도 임상(IIT) 질 관리 및 데이터 안전성 모니터링(DSMB)',
+          ],
+          qualifications: [
+            '전문의 면허 보유 및 SCI(E)급 주저자 논문 실적 보유자',
+            '임상 연구 설계 및 윤리위원회(IRB) 기준에 정통한 분',
+          ],
+          preferredQualifications: [
+            '임상시험센터장 또는 연구부원장 이력 우대',
+          ],
+          benefits: [
+            '단독 연구실 및 개인 연구비 연간 3,000만원 지원',
+            '삼성그룹 패밀리 복지 및 삼성병원 진료비 80% 감면',
+          ],
+          workingHours: '주 4일제 또는 주 5일제 협의 가능',
+        },
+        recruiter: {
+          name: '김태호 부장',
+          title: '미래의학연구원 행정지원실',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+          responseTime: '당일 업무시간 내 응답',
+          safePhone: '0507-1331-5082',
+        },
+      },
+      {
+        id: 'kakao-healthcare-lead',
+        companyName: '카카오헬스케어',
+        verifiedCompany: true,
+        title: '디지털 헬스케어 임상 총괄 디렉터 (VP Level)',
+        matchScore: 88,
+        stabilityScore: 84,
+        salaryKRW: '1.4억 + 스톡옵션 (RSU)',
+        location: '경기 성남시 판교 (판교테크노밸리)',
+        employmentType: '정규직 (하이브리드 원격 근무)',
+        experienceLevel: '전문의 8년 이상 / 디지털 융합 관심자',
+        avgTenureYears: 5.2,
+        avgTenurePercentile: 'IT/바이오 상위 20%',
+        salaryPercentile: '상위 5% (1.4억원 + RSU)',
+        stabilityGrade: 'AA+ (카카오 계열사/고성장)',
+        creditRating: 'AA0',
+        retentionRate: '94.5%',
+        regularWorkerRate: '98.0%',
+        aiInsight: {
+          summary: '풍부한 임상 진료 데이터를 바탕으로 AI 연속혈당측정 및 만성질환 디지털 치료제(DTx)의 임상 유효성을 검증하는 중책입니다. 판교 본사 출근과 재택이 유연하게 결합된 하이브리드 근무를 지원합니다.',
+          coreCompetencyMatch: '임상 데이터 통찰 및 디지털 헬스 유효성 검증 역량 일치',
+          growthPotential: '글로벌 디지털 헬스케어 임상 파이프라인 총괄 VP 승격',
+          matchedKeywords: ['디지털치료제', 'AI헬스케어', '임상총괄', '판교', '스톡옵션'],
+        },
+        details: {
+          mainResponsibilities: [
+            '디지털 만성질환 관리 플랫폼의 임상 타당성 검증 및 IRB 승인 총괄',
+            '국내외 상급종합병원과의 공동 임상시험 설계 및 데이터 프로토콜 수립',
+            '의료 인공지능 알고리즘의 임상적 안전성 및 실효성 자문',
+          ],
+          qualifications: [
+            '의사 면허 및 전문의 자격 보유자 (임상 경력 8년 이상)',
+            '디지털 헬스케어, 의료 기기 또는 임상 데이터 사이언스에 대한 깊은 이해',
+          ],
+          preferredQualifications: [
+            '임상시험(Clinical Trial) 책임연구자(PI) 또는 Sub-I 참여 경험자',
+            '영어 학술 커뮤니케이션 및 글로벌 파트너십 협의 가능자',
+          ],
+          benefits: [
+            '연간 복지포인트 400만원 및 건강검진 프리미엄 패키지 지원',
+            '주 2~3일 자율 원격/재택 근무 및 자율 출퇴근제',
+            '최신 업무 장비 및 RSU(양도제한조건부주식) 보상 체계',
+          ],
+          workingHours: '완전 자율 시차출퇴근제 (주 40시간 자기주도 근무)',
+        },
+        recruiter: {
+          name: '이수민 리드',
+          title: 'People & Culture Talent Acquisition',
+          avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200',
+          responseTime: '보통 30분 이내 응답',
+          safePhone: '0507-1492-3841',
+        },
+      },
+      {
+        id: 'hyundai-health-officer',
+        companyName: '현대자동차 남양연구소',
+        verifiedCompany: true,
+        title: '수석 사내의료원장 (Chief Medical Advisor)',
+        matchScore: 86,
+        stabilityScore: 95,
+        salaryKRW: '1.35억 + 성과급',
+        location: '경기 화성시 / 서울 서초구',
+        employmentType: '정규직 (임원 대우 / 정년 보장)',
+        experienceLevel: '전문의 10년 이상',
+        avgTenureYears: 12.4,
+        avgTenurePercentile: '대기업 상위 5%',
+        salaryPercentile: '상위 8% (1.35억원 + 성과급)',
+        stabilityGrade: 'AAA (현대자동차그룹)',
+        creditRating: 'AAA',
+        retentionRate: '99.3%',
+        regularWorkerRate: '100%',
+        aiInsight: {
+          summary: '1만 명 규모의 남양 R&D 센터 및 양재 본사 임직원 건강 관리와 인간공학적 작업환경 의학 자문을 총괄합니다. 안정성과 임원급 복지가 보장됩니다.',
+          coreCompetencyMatch: '산업보건 및 임상의학 복합 자문 역량 일치',
+          growthPotential: '그룹 전사 헬스케어 거버넌스 최고 고문 위촉',
+          matchedKeywords: ['사내의료원장', '임원대우', '정년보장', '대기업', '화성/서초'],
+        },
+        details: {
+          mainResponsibilities: [
+            '사내 부속의원 진료 총괄 및 임직원 중증 질환 3차 병원 패스트트랙 연계',
+            '자율주행 및 모빌리티 인체공학 연구 생체신호 데이터 의학 자문',
+          ],
+          qualifications: ['전문의 면허 보유자 (임상 경력 10년 이상)'],
+          preferredQualifications: ['가정의학과, 내과, 외과계열 전문의 우대'],
+          benefits: [
+            '현대차 임원 차량 지원 및 유류비 지원',
+            '자녀 대학교 학자금 전액 지원 및 그룹사 임직원 할인',
+          ],
+          workingHours: '주 5일 정규 근무 (08:30 ~ 17:30, 정시 퇴근 문화)',
+        },
+        recruiter: {
+          name: '정민교 팀장',
+          title: '인사기획실 복지보건팀',
+          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+          responseTime: '2시간 이내 응답',
+          safePhone: '0507-1600-8841',
+        },
+      },
+      {
+        id: 'hana-bank-inhouse-clinic',
+        companyName: '하나은행 사내 부속의원',
+        verifiedCompany: true,
+        title: '산업의학/직업환경의학과 전문의',
+        matchScore: 84,
+        stabilityScore: 93,
+        salaryKRW: '1.1억 ~ 1.3억',
+        location: '서울 중구 (을지로 본점)',
+        employmentType: '정규직 (주 5일 정시 퇴근)',
+        experienceLevel: '전문의 5년 이상',
+        avgTenureYears: 10.2,
+        avgTenurePercentile: '금융권 상위 5%',
+        salaryPercentile: '상위 12% (1.1억~1.3억원)',
+        stabilityGrade: 'AAA (하나금융지주)',
+        creditRating: 'AAA',
+        retentionRate: '99.1%',
+        regularWorkerRate: '100%',
+        aiInsight: {
+          summary: '하나금융그룹 본점 임직원 3,000명의 만성질환 관리 및 직무 스트레스 예방, 산업보건 위원회 자문을 총괄합니다. 정시 퇴근 및 금융권 최고 수준의 복리후생이 보장됩니다.',
+          coreCompetencyMatch: '성인 만성질환 관리 및 기업 보건 거버넌스 자문',
+          growthPotential: '하나금융 전 계열사 보건관리 총괄 자문의 위촉',
+          matchedKeywords: ['사내의원', '금융권복지', '을지로본점', '정시퇴근', '만성질환'],
+        },
+        details: {
+          mainResponsibilities: [
+            '본점 사내 부속의원 1차 진료 및 고혈압·당뇨 만성질환 코칭',
+            '산업안전보건위원회 의학 자문 및 건강증진 프로그램 기획',
+            '임직원 종합검진 이상 소견자 추적 관리 및 3차 병원 전원 연계',
+          ],
+          qualifications: [
+            '직업환경의학과, 가정의학과, 내과 등 전문의 면허 소지자',
+            '임상 경력 5년 이상 (사내의원 또는 1차 진료 경험자)',
+          ],
+          preferredQualifications: [
+            '기업체 부속의원 또는 산업보건의 활동 경력자 우대',
+          ],
+          benefits: [
+            '하나금융 임직원 대출 금리 우대 및 본인/가족 의료비 실비 지원',
+            '주 5일 칼퇴근 보장 (17:30 진료 마감 및 추가 근무 전무)',
+            '매년 복지카드 350만원 및 자녀 학자금 지원',
+          ],
+          workingHours: '주 5일 평일 09:00 ~ 17:30 (점심시간 12:00~13:30)',
+        },
+        recruiter: {
+          name: '송원석 수석',
+          title: '하나은행 HR본부 복지후생부',
+          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
+          responseTime: '당일 오전/오후 응답',
+          safePhone: '0507-1422-7719',
+        },
+      },
+      {
+        id: 'seoul-medical-qi-physician',
+        companyName: '서울의료원',
+        verifiedCompany: true,
+        title: '의료 질 관리(QI) 전담의',
+        matchScore: 62,
+        stabilityScore: 87,
+        salaryKRW: '8,000만 ~ 1억원',
+        location: '서울 중랑구 (신내동)',
+        employmentType: '계약직 / 주 4일 가능',
+        experienceLevel: '경력 무관 (전문의 면허)',
+        avgTenureYears: 7.2,
+        avgTenurePercentile: '시립공공병원 보통',
+        salaryPercentile: '상위 25% (8천만~1억원)',
+        stabilityGrade: 'AA (서울특별시 산하 공공병원)',
+        creditRating: 'A+',
+        retentionRate: '95.0%',
+        regularWorkerRate: '98.5%',
+        aiInsight: {
+          summary: '서울특별시 산하 대표 공공의료기관의 의료 질 향상 및 환자 안전 지표 모니터링을 담당합니다. 직접 진료 부담이 적고 행정 및 프로토콜 심의 중심 업무입니다.',
+          coreCompetencyMatch: '의료 질 지표 관리 및 환자 안전 심의 역량',
+          growthPotential: '공공의료 정책 연구팀 자문위원 승격',
+          matchedKeywords: ['의료질관리', 'QI', '공공의료', '서울시립', '행정자문'],
+        },
+        details: {
+          mainResponsibilities: [
+            '원내 임상 진료 질 지표(QI) 관리 및 보건복지부 평가 인증 수검 준비',
+            '환자안전사고 분석 및 재발 방지 개선 대책 심의',
+            '원내 각 진료과 임상 표준 가이드라인 준수도 모니터링',
+          ],
+          qualifications: [
+            '의사 면허 소지자 (전문의 또는 일반의)',
+            '의료기관 평가인증 또는 질 향상 업무에 관심이 있는 분',
+          ],
+          preferredQualifications: [
+            '종합병원급 이상 QI실 또는 적정진료관리실 근무 경험자 우대',
+          ],
+          benefits: [
+            '서울시 공무원 수준의 복지포인트 및 진료비 감면 혜택',
+            '주 4일 선택 근무제 운영 및 유연한 근무 스케줄',
+          ],
+          workingHours: '주 4일 또는 5일 협의 (09:00 ~ 18:00)',
+        },
+        recruiter: {
+          name: '강현우 계장',
+          title: '서울의료원 총무인사팀',
+          avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200',
+          responseTime: '1일 이내 응답',
+          safePhone: '0507-1301-9022',
+        },
+      }
+    ];
+
+    const INITIAL_USER_PROFILE = {
+      name: '김건우',
+      email: 'dr.kim.gunwoo@gmail.com',
+      phone: '010-4829-3819',
+      licenseNumber: 'MED-2011-049281',
+      specialty: '흉부외과 전문의 (의학박사)',
+      experienceYears: 15,
+      locationPreference: '서울 종로구 / 중구',
+      preferredWorkType: '정규직 / 유연근무',
+      googleAvatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200',
+      savedJobIds: ['snuh-senior-medical-consultant', 'samsung-medical-advisor'],
+      appliedJobIds: [],
+      aptitudeScores: {
+        leadership: 88,
+        clinicalInsight: 96,
+        strategicPlanning: 92,
+        communication: 85,
+        adaptability: 84,
+      },
+    };
+
+    // ==========================================
+    // 2.5 FIREBASE FIRESTORE INITIALIZATION & SERVICE
+    // ==========================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyCrW6HXGjVbyk_0k9SKRHSRs629ol0dnYo",
+      authDomain: "gen-lang-client-0529162863.firebaseapp.com",
+      projectId: "gen-lang-client-0529162863",
+      storageBucket: "gen-lang-client-0529162863.firebasestorage.app",
+      messagingSenderId: "819805526031",
+      appId: "1:819805526031:web:4adae67390cd8f3b162b7a"
+    };
+
+    // Firestore 연결은 assets/firebase-db.js가 관리한다
+    const db = (window.ChwireupDB && window.ChwireupDB.db()) || null;
+    const isFirebaseReady = !!db;
+
+    // ==========================================
+    // 3. MAIN COMPONENT IMPLEMENTATION
+    // ==========================================
+    function App() {
+      // Read initial parameters from URL if any
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialJobId = urlParams.get('jobId') || 'snuh-senior-medical-consultant';
+      const initialTab = urlParams.get('tab') || 'jobs';
+
+      const [jobs, setJobs] = useState(MOCK_JOBS);
+      const [selectedJobId, setSelectedJobId] = useState(initialJobId);
+      const [userProfile, setUserProfile] = useState(INITIAL_USER_PROFILE);
+      const [currentTab, setCurrentTab] = useState(initialTab); // 'jobs' | 'ai-analysis' | 'communication' | 'my-page'
+      const [jobViewMode, setJobViewMode] = useState('detail'); // 'detail' | 'list'
+      const [searchQuery, setSearchQuery] = useState('');
+      const [selectedDistrict, setSelectedDistrict] = useState('전체 지역');
+      const [selectedWorkType, setSelectedWorkType] = useState('전체 고용형태');
+      const [firestoreStatus, setFirestoreStatus] = useState('연동 확인 중...');
+
+      // Modals
+      const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+      const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+      const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+
+      // AI Saved Reports List
+      const [savedItemsList, setSavedItemsList] = useState([
+        {
+          id: 'report-init-1',
+          type: 'ai_report',
+          title: '상급종합병원 시니어 의료 자문 AI 정밀 역량 매칭 리포트',
+          subtitle: '서울 종로구/강남구 대상 · 임상통찰 96점 · 추천 일치율 94%',
+          savedAt: '2026-08-16 10:30',
+        },
+        {
+          id: 'report-init-2',
+          type: 'ai_report',
+          title: '디지털 헬스케어 임상 총괄 디렉터 적성 진단',
+          subtitle: '경기 판교/성남 대상 · 신기술 수용성 88점 · 추천 일치율 91%',
+          savedAt: '2026-08-15 17:45',
+        },
+      ]);
+
+      // Applications
+      const [applications, setApplications] = useState([
+        {
+          id: 'app-snuh-demo',
+          jobId: 'snuh-senior-medical-consultant',
+          jobTitle: '시니어 의료 컨설턴트 (전문의 자문역)',
+          companyName: '서울대학교병원 (SNUH)',
+          appliedAt: '2026-08-15',
+          status: '서류 심사 중 (적합)',
+          coverNote: '흉부외과 15년 임상 경험과 병원 행정 자문 역량을 바탕으로 기여하고자 합니다.',
+          resumeSummary: '김건우 (흉부외과 전문의 15년 / 상위 5% 역량 매칭)',
+        },
+      ]);
+
+      // Real-time Chat Messages
+      const [messages, setMessages] = useState([
+        {
+          id: 'snuh-init-1',
+          jobId: 'snuh-senior-medical-consultant',
+          sender: 'recruiter',
+          text: '안녕하십니까 김건우 원장님, 서울대학교병원 인재개발실 박지현 팀장입니다. 시니어 의료 컨설턴트 포지션과 관련하여 근무 형태, 자문 범위 등 궁금하신 점이 있으시면 언제든 편하게 남겨주십시오.',
+          timestamp: '오전 10:14',
+        },
+        {
+          id: 'severance-init-1',
+          jobId: 'severance-checkup-director',
+          sender: 'recruiter',
+          text: '원장님 안녕하십니까, 세브란스 체크업 센터 인사기획팀 최윤진 부장입니다. 건강검진센터 소장급 포지션의 야간 당직 없는 주 4~5일 근무 조건 및 세부 자문 사항 안내 가능합니다.',
+          timestamp: '오전 10:30',
+        },
+        {
+          id: 'samsung-init-1',
+          jobId: 'samsung-medical-advisor',
+          sender: 'recruiter',
+          text: '안녕하십니까 원장님, 삼성서울병원 미래의학연구원 김태호 부장입니다. 정밀의학 임상 가이드라인 심의 및 단독 연구실 지원 혜택에 대해 문의 사항이 있으시면 말씀해 주십시오.',
+          timestamp: '오전 11:00',
+        },
+        {
+          id: 'kakao-init-1',
+          jobId: 'kakao-healthcare-lead',
+          sender: 'recruiter',
+          text: '안녕하세요 원장님! 카카오헬스케어 TA팀 이수민입니다. 디지털 치료제 및 AI 헬스케어 임상 총괄 관련 협의 사항 문의 환영합니다.',
+          timestamp: '오전 09:30',
+        },
+        {
+          id: 'hyundai-init-1',
+          jobId: 'hyundai-health-officer',
+          sender: 'recruiter',
+          text: '원장님 안녕하십니까, 현대자동차 복지보건팀 정민교 팀장입니다. 수석 사내의료원장 포지션의 임원급 처우 및 정년 보장 조건 관련하여 성심껏 안내해 드리겠습니다.',
+          timestamp: '오전 09:45',
+        },
+        {
+          id: 'hana-init-1',
+          jobId: 'hana-bank-inhouse-clinic',
+          sender: 'recruiter',
+          text: '안녕하세요 원장님, 하나은행 HR본부 송원석 수석입니다. 을지로 본점 사내 부속의원 주 5일 정시 퇴근 및 만성질환 관리 자문 역할에 대해 문의주시면 친절히 안내드리겠습니다.',
+          timestamp: '오전 10:00',
+        },
+        {
+          id: 'seoul-med-init-1',
+          jobId: 'seoul-medical-qi-physician',
+          sender: 'recruiter',
+          text: '안녕하십니까 원장님, 서울의료원 총무인사팀 강현우 계장입니다. 의료 질 관리(QI) 전담의 포지션의 주 4일 근무 및 프로토콜 심의 업무에 대해 안내 도와드리겠습니다.',
+          timestamp: '오전 10:15',
+        },
+      ]);
+
+      // ==========================================
+      // FIRESTORE REAL-TIME SYNCHRONIZATION
+      // ==========================================
+      useEffect(() => {
+        if (!db) {
+          setFirestoreStatus('로컬 모드 (오프라인)');
+          return;
+        }
+
+        setFirestoreStatus('실시간 동기화 완료');
+
+        // 1. Initial Seed of Jobs if empty
+        const initFirestoreData = async () => {
+          try {
+            const jobsSnap = await db.collection('jobs').get();
+            if (jobsSnap.empty) {
+              const batch = db.batch();
+              MOCK_JOBS.forEach((job) => {
+                const docRef = db.collection('jobs').doc(job.id);
+                batch.set(docRef, { ...job, updatedAt: new Date().toISOString() });
+              });
+              await batch.commit();
+            }
+
+            // Seed User
+            const userRef = db.collection('users').doc('user_kim_gunwoo');
+            const userSnap = await userRef.get();
+            if (!userSnap.exists) {
+              await userRef.set({ ...INITIAL_USER_PROFILE, updatedAt: new Date().toISOString() });
+            }
+
+            // Seed Initial Messages if empty
+            const msgSnap = await db.collection('messages').limit(1).get();
+            if (msgSnap.empty) {
+              const msgBatch = db.batch();
+              messages.forEach((msg) => {
+                const docRef = db.collection('messages').doc(msg.id);
+                msgBatch.set(docRef, { ...msg, userId: 'user_kim_gunwoo', createdAt: new Date().toISOString() });
+              });
+              await msgBatch.commit();
+            }
+          } catch (e) {
+            console.error("Firestore Init/Seed Error:", e);
+          }
+        };
+
+        initFirestoreData();
+
+        // 2. Listen to Jobs
+        const unsubJobs = db.collection('jobs').onSnapshot((snapshot) => {
+          if (!snapshot.empty) {
+            const dbJobs = snapshot.docs.map(doc => doc.data());
+            setJobs(dbJobs);
+          }
+        }, (err) => console.warn("Jobs listener:", err));
+
+        // 3. Listen to User Profile
+        const unsubUser = db.collection('users').doc('user_kim_gunwoo').onSnapshot((doc) => {
+          if (doc.exists) {
+            setUserProfile(prev => ({ ...prev, ...doc.data() }));
+          }
+        }, (err) => console.warn("User listener:", err));
+
+        // 4. Listen to Applications
+        const unsubApps = db.collection('applications').onSnapshot((snapshot) => {
+          if (!snapshot.empty) {
+            const dbApps = snapshot.docs.map(doc => doc.data());
+            setApplications(dbApps);
+          }
+        }, (err) => console.warn("Apps listener:", err));
+
+        // 5. Listen to Messages
+        const unsubMsgs = db.collection('messages').onSnapshot((snapshot) => {
+          if (!snapshot.empty) {
+            const dbMsgs = snapshot.docs.map(doc => doc.data());
+            // Sort by creation time or id
+            setMessages(dbMsgs);
+          }
+        }, (err) => console.warn("Msgs listener:", err));
+
+        // 6. Listen to AI Reports
+        const unsubReports = db.collection('ai_reports').onSnapshot((snapshot) => {
+          if (!snapshot.empty) {
+            const dbReports = snapshot.docs.map(doc => doc.data());
+            setSavedItemsList(dbReports);
+          }
+        }, (err) => console.warn("Reports listener:", err));
+
+        return () => {
+          unsubJobs();
+          unsubUser();
+          unsubApps();
+          unsubMsgs();
+          unsubReports();
+        };
+      }, []);
+
+      // Synchronize URL search params with state
+      useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const jId = params.get('jobId');
+        const tab = params.get('tab');
+        if (jId && jobs.some(j => j.id === jId)) {
+          setSelectedJobId(jId);
+          setCurrentTab('jobs');
+          setJobViewMode('detail');
+        }
+        if (tab) {
+          setCurrentTab(tab);
+        }
+      }, [jobs]);
+
+      const handleSelectJob = (id) => {
+        setSelectedJobId(id);
+        setJobViewMode('detail');
+        const url = new URL(window.location.href);
+        url.searchParams.set('jobId', id);
+        window.history.replaceState({}, '', url);
+      };
+
+      const handleSelectTab = (tab) => {
+        setCurrentTab(tab);
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', tab);
+        window.history.replaceState({}, '', url);
+      };
+
+      // Filtered Jobs
+      const filteredJobs = useMemo(() => {
+        return jobs.filter((job) => {
+          if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            const matches = job.companyName.toLowerCase().includes(q) ||
+                            job.title.toLowerCase().includes(q) ||
+                            job.location.toLowerCase().includes(q) ||
+                            (job.aiInsight && job.aiInsight.matchedKeywords && job.aiInsight.matchedKeywords.some(k => k.toLowerCase().includes(q)));
+            if (!matches) return false;
+          }
+          if (selectedDistrict !== '전체 지역') {
+            if (selectedDistrict === '서울 종로구' && !job.location.includes('종로')) return false;
+            if (selectedDistrict === '서울 강남구' && !job.location.includes('강남')) return false;
+            if (selectedDistrict === '경기 판교/성남' && !job.location.includes('성남') && !job.location.includes('판교')) return false;
+            if (selectedDistrict === '경기 화성/서초' && !job.location.includes('화성') && !job.location.includes('서초')) return false;
+          }
+          if (selectedWorkType !== '전체 고용형태') {
+            if (selectedWorkType === '정규직' && !job.employmentType.includes('정규직')) return false;
+            if (selectedWorkType === '유연근무/자율' && job.details && job.details.workingHours && !job.details.workingHours.includes('유연') && !job.details.workingHours.includes('자율')) return false;
+          }
+          return true;
+        });
+      }, [jobs, searchQuery, selectedDistrict, selectedWorkType]);
+
+      // MOCK_JOBS에 없는 공고(카탈로그·기업 등록분)는 목록 데이터로 상세를 구성한다
+      const buildFromCatalog = (id) => {
+        const pool = [].concat(
+          (window.ChwireupJobs && window.ChwireupJobs.list()) || [],
+          window.ChwireupCatalog || []
+        );
+        const c = pool.find((j) => j.id === id);
+        if (!c) return null;
+
+        return {
+          id: c.id,
+          companyName: c.companyName,
+          verifiedCompany: true,
+          title: c.title,
+          matchScore: c.matchRate || 80,
+          stabilityScore: 82,
+          salaryKRW: c.salaryRange,
+          location: c.location,
+          employmentType: '정규직 / 근무 형태 협의',
+          experienceLevel: c.experience || '경력 무관',
+          avgTenureYears: 7.4,
+          avgTenurePercentile: '업계 상위 30%',
+          salaryPercentile: '상위 20%',
+          stabilityGrade: 'AA (재무·근속 확인 완료)',
+          creditRating: 'A2',
+          retentionRate: '95.6%',
+          regularWorkerRate: '98.1%',
+          imageUrl: c.imageUrl,
+          aiInsight: {
+            summary: `${c.companyName}의 ${c.title} 포지션입니다. ${
+              c.specialty ? c.specialty + ' 역량을 중심으로 ' : ''
+            }사람이 최종 판단을 맡는 자리로 분류되어, 자동화 대체 위험이 낮은 직무로 평가됩니다.`,
+            coreCompetencyMatch: c.specialty || '직무 핵심 역량',
+            growthPotential: '조직 내 의사결정 권한 확대 및 자문 역할 확장',
+            matchedKeywords: [c.location, c.experience, c.specialty].filter(Boolean),
+          },
+          details: {
+            mainResponsibilities: [
+              `${c.title} 직무 수행 및 관련 의사결정 검토`,
+              '자동화 도구가 내놓은 결과의 최종 확인과 책임 판단',
+              '내부 기준 수립과 구성원 교육',
+            ],
+            qualifications: [
+              c.experience || '경력 무관',
+              c.specialty ? `${c.specialty} 관련 실무 경험` : '해당 직무 실무 경험',
+            ],
+            preferredQualifications: ['조직 내 자문 또는 보직 경험자'],
+            benefits: ['재무·근속 지표 확인 완료 기업', '0507 안심번호 상담 제공'],
+            workingHours: '주 5일 / 세부 조건 협의',
+          },
+          recruiter: {
+            name: '채용 담당자',
+            title: `${c.companyName} 인사팀`,
+            avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+            responseTime: '보통 하루 이내 응답',
+            safePhone: '0507-1384-0000',
+          },
+        };
+      };
+
+      const selectedJob = useMemo(() => {
+        return jobs.find((j) => j.id === selectedJobId) || buildFromCatalog(selectedJobId) || jobs[0];
+      }, [jobs, selectedJobId]);
+
+      // Save/Unsave Job with Firestore Persistence
+      const handleToggleSave = async (jobId) => {
+        const alreadySaved = userProfile.savedJobIds.includes(jobId);
+        const newSaved = alreadySaved
+          ? userProfile.savedJobIds.filter((id) => id !== jobId)
+          : [jobId, ...userProfile.savedJobIds];
+
+        const updatedUser = { ...userProfile, savedJobIds: newSaved };
+        setUserProfile(updatedUser);
+
+        if (db) {
+          try {
+            await db.collection('users').doc('user_kim_gunwoo').set({
+              savedJobIds: newSaved,
+              updatedAt: new Date().toISOString()
+            }, { merge: true });
+          } catch (e) {
+            console.error("Firestore user save error:", e);
+          }
+        }
+      };
+
+      // Save AI Report with Firestore Persistence
+      const handleSaveAIResult = async (note) => {
+        const newRecord = {
+          id: `report-${Date.now()}`,
+          userId: 'user_kim_gunwoo',
+          type: 'ai_report',
+          title: 'AI 역량 및 주거 조건 정밀 분석 리포트',
+          subtitle: note,
+          savedAt: new Date().toLocaleString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        };
+        setSavedItemsList((prev) => [newRecord, ...prev]);
+
+        if (db) {
+          try {
+            await db.collection('ai_reports').doc(newRecord.id).set({
+              ...newRecord,
+              createdAt: new Date().toISOString()
+            });
+          } catch (e) {
+            console.error("Firestore report save error:", e);
+          }
+        }
+      };
+
+      // Delete AI Report with Firestore Persistence
+      const handleDeleteSavedItem = async (id) => {
+        setSavedItemsList((prev) => prev.filter((item) => item.id !== id));
+        if (db) {
+          try {
+            await db.collection('ai_reports').doc(id).delete();
+          } catch (e) {
+            console.error("Firestore report delete error:", e);
+          }
+        }
+      };
+
+      // Send Message & Auto Reply with Firestore Persistence
+      const handleSendMessage = async (text, jobId) => {
+        const newMsg = {
+          id: `msg-${Date.now()}`,
+          jobId,
+          userId: 'user_kim_gunwoo',
+          sender: 'user',
+          text,
+          timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+          createdAt: new Date().toISOString()
+        };
+        setMessages((prev) => [...prev, newMsg]);
+
+        if (db) {
+          try {
+            await db.collection('messages').doc(newMsg.id).set(newMsg);
+          } catch (e) {
+            console.error("Firestore msg save error:", e);
+          }
+        }
+
+        setTimeout(async () => {
+          let replyText = '문의 주셔서 감사합니다. 담당자 검토 후 신속히 유선 또는 채팅으로 상세 답변 드리겠습니다.';
+          if (text.includes('유연근무') || text.includes('근무 형태') || text.includes('주 4.5일')) {
+            replyText = '네, 본 시니어 컨설턴트 포지션은 전문의 원장님의 연구 일정 및 외부 자문 일정에 맞추어 주 4.5일 또는 선택적 유연근무 시간 지정이 충분히 가능합니다.';
+          } else if (text.includes('일정') || text.includes('전형')) {
+            replyText = '서류 전형 접수 시 3영업일 이내에 개별 연락을 드리며, 1차 면담은 원장님의 편하신 시간에 대면 또는 화상으로 진행됩니다.';
+          }
+          const recruiterReply = {
+            id: `reply-${Date.now()}`,
+            jobId,
+            userId: 'user_kim_gunwoo',
+            sender: 'recruiter',
+            text: replyText,
+            timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+            createdAt: new Date().toISOString()
+          };
+          setMessages((prev) => [...prev, recruiterReply]);
+
+          if (db) {
+            try {
+              await db.collection('messages').doc(recruiterReply.id).set(recruiterReply);
+            } catch (e) {
+              console.error("Firestore reply save error:", e);
+            }
+          }
+        }, 1000);
+      };
+
+      // Confirm Application with Firestore Persistence
+      const handleConfirmApply = async (coverNote) => {
+        const newApp = {
+          id: `app-${Date.now()}`,
+          userId: 'user_kim_gunwoo',
+          jobId: selectedJob.id,
+          jobTitle: selectedJob.title,
+          companyName: selectedJob.companyName,
+          appliedAt: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }),
+          status: '접수 완료 (심사진행)',
+          coverNote,
+          resumeSummary: `${userProfile.name} (흉부외과 전문의 15년 / 상위 5% 역량 매칭)`,
+          createdAt: new Date().toISOString()
+        };
+        setApplications((prev) => [newApp, ...prev]);
+        const updatedAppliedIds = [...userProfile.appliedJobIds, selectedJob.id];
+        setUserProfile((prev) => ({
+          ...prev,
+          appliedJobIds: updatedAppliedIds,
+        }));
+
+        if (db) {
+          try {
+            await db.collection('applications').doc(newApp.id).set(newApp);
+            await db.collection('users').doc('user_kim_gunwoo').set({
+              appliedJobIds: updatedAppliedIds,
+              updatedAt: new Date().toISOString()
+            }, { merge: true });
+          } catch (e) {
+            console.error("Firestore application save error:", e);
+          }
+        }
+        setIsApplyModalOpen(false);
+      };
+
+      // 공고별 대표 사진. 등록되지 않은 공고는 기본 이미지를 쓴다.
+      const COVER_IMAGES = {
+        'snuh-senior-medical-consultant': 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=1600',
+        'severance-checkup-director': 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&q=80&w=1600',
+        'samsung-medical-advisor': 'https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&q=80&w=1600',
+        'kakao-healthcare-lead': 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&q=80&w=1600',
+        'hyundai-health-officer': 'https://images.unsplash.com/photo-1581056771107-24ca5f033842?auto=format&fit=crop&q=80&w=1600',
+        'hana-bank-inhouse-clinic': 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=1600',
+        'seoul-medical-qi-physician': 'https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?auto=format&fit=crop&q=80&w=1600',
+      };
+      const coverImage =
+        selectedJob.imageUrl ||
+        COVER_IMAGES[selectedJob.id] ||
+        'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1600';
+
+      const isSaved = userProfile.savedJobIds.includes(selectedJob.id);
+      const isApplied = userProfile.appliedJobIds.includes(selectedJob.id);
+
+      return (
+        <div className="min-h-screen flex flex-col">
+
+          {/* ========================================== */}
+          {/* 2. TAB 1: 채용 검색 & 기업 상세 정보       */}
+          {/* ========================================== */}
+          {currentTab === 'jobs' && (
+            <>
+              {/* 뒤로 가기 – 공고 목록에서 들어오는 화면이라 되돌아갈 길만 둔다 */}
+              <div className="bg-white border-b border-gray-200 py-3">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <a
+                    href="company.html"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-bold text-gray-700 hover:text-[#002045] hover:bg-gray-100 transition"
+                  >
+                    <span aria-hidden="true">←</span>
+                    <span>채용공고로 돌아가기</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Main Job Content Area */}
+              <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {jobViewMode === 'detail' ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                    {/* Left 2 Cols: Main Job Details */}
+                    <div className="lg:col-span-2 space-y-6">
+                      {/* 기업 대표 사진 */}
+                      <figure className="relative rounded-2xl overflow-hidden border border-gray-200 bg-gray-100">
+                        <img
+                          src={coverImage}
+                          alt={selectedJob.companyName + ' 전경'}
+                          className="w-full h-56 sm:h-72 lg:h-80 object-cover"
+                        />
+                        <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent px-5 sm:px-7 py-5">
+                          <p className="text-white/85 text-xs font-semibold mb-1">{selectedJob.location}</p>
+                          <p className="text-white text-lg sm:text-2xl font-extrabold tracking-tight">
+                            {selectedJob.companyName}
+                          </p>
+                        </figcaption>
+                      </figure>
+
+                      {/* Job Header Card */}
+                      <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-gray-500">{selectedJob.companyName}</span>
+                              <span className="inline-flex items-center text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                                <Icon name="shield-check" className="w-3 h-3 mr-1" />
+                                고용노동부 인증
+                              </span>
+                            </div>
+                            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-2 tracking-tight">
+                              {selectedJob.title}
+                            </h1>
+                          </div>
+                          <div className="w-14 h-14 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-black text-xl">
+                            {selectedJob.companyName.slice(0, 2)}
+                          </div>
+                        </div>
+
+                        {/* Match & Stability Badges */}
+                        <div className="flex flex-wrap items-center gap-3 mt-4">
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold">
+                            <Icon name="sparkles" className="w-3.5 h-3.5 text-blue-600" />
+                            <span>{selectedJob.matchScore}% Match</span>
+                          </div>
+                          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 text-gray-800 text-xs font-medium border border-gray-200">
+                            <span>Stability Score</span>
+                            <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden inline-block">
+                              <div className="h-full bg-blue-700 rounded-full" style={{ width: `${selectedJob.stabilityScore}%` }}></div>
+                            </div>
+                            <span className="font-bold text-gray-900">{selectedJob.stabilityScore}%</span>
+                          </div>
+                        </div>
+
+                        <div className="my-6 border-t border-gray-100"></div>
+
+                        {/* 4 Attributes Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                          <div>
+                            <span className="text-gray-400 block mb-0.5">연봉</span>
+                            <span className="text-sm font-bold text-gray-900">{selectedJob.salaryKRW}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400 block mb-0.5">근무지</span>
+                            <span className="text-sm font-bold text-gray-900">{selectedJob.location}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400 block mb-0.5">고용형태</span>
+                            <span className="text-sm font-bold text-gray-900">{selectedJob.employmentType}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400 block mb-0.5">경력 요건</span>
+                            <span className="text-sm font-bold text-gray-900">{selectedJob.experienceLevel}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* AI Matching Insight Card */}
+                      <div className="bg-gradient-to-br from-blue-50/80 via-indigo-50/40 to-white rounded-2xl border border-blue-200 p-6 sm:p-7 shadow-xs">
+                        <div className="flex items-center gap-2.5 mb-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center">
+                            <Icon name="sparkles" className="w-4 h-4" />
+                          </div>
+                          <h2 className="text-lg font-bold text-gray-900">AI 매칭 인사이트</h2>
+                        </div>
+                        <p className="text-sm text-gray-700 leading-relaxed font-medium">{selectedJob.aiInsight.summary}</p>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                          <div className="bg-white p-3.5 rounded-xl border border-blue-100 shadow-xs">
+                            <span className="text-xs font-bold text-gray-900 block mb-1">핵심 역량 일치도</span>
+                            <p className="text-xs text-gray-600">{selectedJob.aiInsight.coreCompetencyMatch}</p>
+                          </div>
+                          <div className="bg-white p-3.5 rounded-xl border border-blue-100 shadow-xs">
+                            <span className="text-xs font-bold text-gray-900 block mb-1">성장 잠재력</span>
+                            <p className="text-xs text-gray-600">{selectedJob.aiInsight.growthPotential}</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-blue-100 flex flex-wrap gap-1.5">
+                          {selectedJob.aiInsight.matchedKeywords.map((kw, i) => (
+                            <span key={i} className="px-2 py-0.5 bg-white text-blue-800 rounded border border-blue-200 text-xs font-medium">#{kw}</span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Job Details Card */}
+                      <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs space-y-6">
+                        <h2 className="text-xl font-bold text-gray-900">직무 상세</h2>
+
+                        <div className="space-y-2">
+                          <h3 className="text-sm font-bold text-gray-900">주요 업무</h3>
+                          <ul className="space-y-1.5 text-xs text-gray-700">
+                            {selectedJob.details.mainResponsibilities.map((item, i) => (
+                              <li key={i} className="flex items-start">
+                                <span className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="space-y-2">
+                          <h3 className="text-sm font-bold text-gray-900">자격 요건</h3>
+                          <ul className="space-y-1.5 text-xs text-gray-700">
+                            {selectedJob.details.qualifications.map((item, i) => (
+                              <li key={i} className="flex items-start">
+                                <span className="w-1.5 h-1.5 bg-gray-500 rounded-full mt-1.5 mr-2 flex-shrink-0"></span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="space-y-2 pt-2 border-t border-gray-100">
+                          <h3 className="text-sm font-bold text-gray-900">근무 환경 및 혜택</h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            {selectedJob.details.benefits.map((b, i) => (
+                              <div key={i} className="p-2.5 bg-gray-50 rounded-lg border border-gray-100 flex items-center gap-2">
+                                <Icon name="check" className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                                <span className="text-gray-700">{b}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-xs text-gray-500 pt-2 font-medium">근무 시간: {selectedJob.details.workingHours}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right 1 Col: Action Box & Stability Metrics */}
+                    <div className="space-y-6 lg:sticky lg:top-24">
+                      {/* Action Box */}
+                      <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs space-y-3">
+                        <button
+                          onClick={() => setIsApplyModalOpen(true)}
+                          className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs tracking-wide transition-all shadow-xs flex items-center justify-center gap-2 ${
+                            isApplied ? 'bg-emerald-700 text-white' : 'bg-[#0f3b82] hover:bg-[#0c2f68] text-white'
+                          }`}
+                        >
+                          {isApplied ? '지원 완료 (접수 확인)' : '지원하기'}
+                        </button>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => setIsContactModalOpen(true)}
+                            className="py-2.5 px-3 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-xs flex items-center justify-center gap-1.5"
+                          >
+                            <Icon name="message-square" className="w-3.5 h-3.5 text-gray-500" />
+                            <span>문의하기</span>
+                          </button>
+                          <button
+                            onClick={() => handleToggleSave(selectedJob.id)}
+                            className={`py-2.5 px-3 rounded-xl border font-semibold text-xs flex items-center justify-center gap-1.5 ${
+                              isSaved ? 'bg-blue-50 border-blue-300 text-blue-700' : 'border-gray-200 hover:bg-gray-50 text-gray-700'
+                            }`}
+                          >
+                            <Icon name={isSaved ? "bookmark-check" : "bookmark"} className="w-3.5 h-3.5 text-blue-600" />
+                            <span>{isSaved ? '저장됨' : '저장'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Company Stability Metrics Card */}
+                      <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs space-y-5">
+                        <h2 className="text-sm font-bold text-gray-900">기업 안정성 지표</h2>
+
+                        {/* Tenure */}
+                        <div className="space-y-1.5 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">평균 근속 연수</span>
+                            <span className="font-bold text-gray-900">{selectedJob.avgTenureYears}년</span>
+                          </div>
+                          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-700 rounded-full" style={{ width: `${Math.min(100, (selectedJob.avgTenureYears / 10) * 100)}%` }}></div>
+                          </div>
+                          <div className="text-right text-[10px] text-gray-400">{selectedJob.avgTenurePercentile}</div>
+                        </div>
+
+                        {/* Salary Percentile */}
+                        <div className="space-y-1.5 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">연봉 분위</span>
+                            <span className="font-bold text-gray-900">{selectedJob.salaryPercentile}</span>
+                          </div>
+                          <div className="grid grid-cols-4 gap-1 h-2">
+                            <div className="bg-gray-200 rounded-xs"></div>
+                            <div className="bg-gray-200 rounded-xs"></div>
+                            <div className="bg-gray-200 rounded-xs"></div>
+                            <div className="bg-blue-700 rounded-xs"></div>
+                          </div>
+                        </div>
+
+                        {/* Grade Details */}
+                        <div className="pt-2 border-t border-gray-100 space-y-2 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">고용 안정 등급</span>
+                            <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">{selectedJob.stabilityGrade}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">1년 내 고용유지율</span>
+                            <span className="font-bold text-gray-900">{selectedJob.retentionRate}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Recruiter Box */}
+                      <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-gray-900">채용 담당자</span>
+                          <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-bold">온라인</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <img src={selectedJob.recruiter.avatar} alt="Recruiter" className="w-10 h-10 rounded-full object-cover border" />
+                          <div>
+                            <p className="text-xs font-bold text-gray-900">{selectedJob.recruiter.name} ({selectedJob.recruiter.title})</p>
+                            <p className="text-[10px] text-gray-500">{selectedJob.recruiter.responseTime}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setIsContactModalOpen(true)}
+                          className="w-full py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700"
+                        >
+                          안심 전화 / 1:1 채팅 문의
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Job List Grid Mode */
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {filteredJobs.map((job) => (
+                      <div
+                        key={job.id}
+                        onClick={() => { setSelectedJobId(job.id); setJobViewMode('detail'); }}
+                        className="bg-white rounded-2xl border border-gray-200 p-5 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer space-y-3"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="text-xs font-bold text-gray-500">{job.companyName}</span>
+                            <h3 className="text-base font-bold text-gray-900 mt-0.5">{job.title}</h3>
+                          </div>
+                          <span className="px-2.5 py-1 bg-blue-50 text-blue-700 font-bold text-xs rounded-full border border-blue-200">
+                            {job.matchScore}% Match
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-2 border-y border-gray-100 text-xs">
+                          <div><span className="text-gray-400 block text-[10px]">연봉</span><strong className="text-gray-800">{job.salaryKRW}</strong></div>
+                          <div><span className="text-gray-400 block text-[10px]">근무지</span><span className="text-gray-800">{job.location}</span></div>
+                          <div><span className="text-gray-400 block text-[10px]">고용형태</span><span className="text-gray-800">{job.employmentType}</span></div>
+                          <div><span className="text-gray-400 block text-[10px]">근속연수</span><strong className="text-blue-900">{job.avgTenureYears}년</strong></div>
+                        </div>
+                        <p className="text-xs text-gray-600 line-clamp-2 bg-blue-50/60 p-2 rounded-lg">{job.aiInsight.coreCompetencyMatch}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </main>
+            </>
+          )}
+
+          {/* ========================================== */}
+          {/* 3. TAB 2: AI 역량·성격·적성 & 주거조건 분석 */}
+          {/* ========================================== */}
+          {currentTab === 'ai-analysis' && (
+            <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+              <div className="border-b border-gray-200 pb-4">
+                <span className="text-xs font-bold text-blue-700 uppercase">AI 역량·성격·적성 & 주거조건 정밀 진단 시스템</span>
+                <h1 className="text-2xl font-extrabold text-gray-900 mt-1">맞춤형 커리어 매칭 및 적성 분석</h1>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Sliders and Inputs (5 cols) */}
+                <div className="lg:col-span-5 space-y-6">
+                  <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs space-y-4">
+                    <h2 className="text-sm font-bold text-gray-900">1. 주거 조건 및 근무 형태</h2>
+                    <div className="space-y-3 text-xs">
+                      <div>
+                        <label className="font-semibold text-gray-700 block mb-1">희망 거주 / 출퇴근 지역</label>
+                        <select
+                          value={userProfile.locationPreference}
+                          onChange={(e) => setUserProfile({ ...userProfile, locationPreference: e.target.value })}
+                          className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-xl font-medium"
+                        >
+                          <option value="서울 종로구/중구">서울 종로구 / 중구 (상급종합병원 밀집)</option>
+                          <option value="서울 강남구/서초구">서울 강남구 / 서초구 (바이오 클러스터)</option>
+                          <option value="경기 판교/성남">경기 성남시 판교 (디지털 헬스케어 IT)</option>
+                          <option value="경기 화성/서초">경기 화성 / 서초 (대기업 R&D 센터)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs space-y-4">
+                    <h2 className="text-sm font-bold text-gray-900">2. 역량·성격 지표 가중치</h2>
+                    <div className="space-y-4 text-xs">
+                      {Object.entries(userProfile.aptitudeScores).map(([key, val]) => (
+                        <div key={key} className="space-y-1">
+                          <div className="flex justify-between font-semibold">
+                            <span className="text-gray-700">{key === 'clinicalInsight' ? '임상 전문성 및 프로토콜' : key === 'strategicPlanning' ? '병원 행정 정책 기획력' : key === 'leadership' ? '조직 리더십' : key === 'communication' ? '다학제 소통 협업' : '신기술 수용성'}</span>
+                            <span className="text-blue-700 font-bold">{val}점</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="50"
+                            max="100"
+                            value={val}
+                            onChange={(e) => setUserProfile({
+                              ...userProfile,
+                              aptitudeScores: { ...userProfile.aptitudeScores, [key]: Number(e.target.value) }
+                            })}
+                            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-700"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Result & Save Button (7 cols) */}
+                <div className="lg:col-span-7 space-y-6">
+                  <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl border border-blue-200 p-6 shadow-xs space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-base font-bold text-gray-900">AI 종합 역량 진단 보고서</h3>
+                        <p className="text-xs text-blue-700 font-semibold">{userProfile.name} 님 ({userProfile.specialty})</p>
+                      </div>
+                      <button
+                        onClick={() => handleSaveAIResult(`지역: ${userProfile.locationPreference}, 임상통찰: ${userProfile.aptitudeScores.clinicalInsight}점`)}
+                        className="px-3.5 py-1.5 bg-white border border-blue-300 text-blue-700 hover:bg-blue-50 rounded-xl text-xs font-bold shadow-xs"
+                      >
+                        AI 분석 결과 저장
+                      </button>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-blue-100 text-xs leading-relaxed text-gray-700 space-y-2">
+                      <p className="font-bold text-gray-900">최상위 적합: 상급종합병원 시니어 자문 및 디지털 헬스케어 디렉터</p>
+                      <p>
+                        {userProfile.name} 님의 임상 전문성({userProfile.aptitudeScores.clinicalInsight}점)과 의료 기획력({userProfile.aptitudeScores.strategicPlanning}점)을 종합 분석한 결과,
+                        선택하신 <strong>{userProfile.locationPreference}</strong> 소재 상급 의료기관과의 매칭 적합도가 94% 이상으로 계산되었습니다.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-xs space-y-3">
+                    <h3 className="text-sm font-bold text-gray-900">추천 매칭 채용 공고</h3>
+                    {jobs.map((job) => (
+                      <div
+                        key={job.id}
+                        onClick={() => { setSelectedJobId(job.id); setCurrentTab('jobs'); setJobViewMode('detail'); }}
+                        className="p-3.5 rounded-xl border border-gray-200 hover:border-blue-500 cursor-pointer flex justify-between items-center text-xs"
+                      >
+                        <div>
+                          <span className="font-semibold text-gray-600">{job.companyName}</span>
+                          <p className="font-bold text-gray-900 text-sm mt-0.5">{job.title}</p>
+                        </div>
+                        <span className="px-3 py-1 bg-blue-700 text-white rounded-lg font-bold">열람하기</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </main>
+          )}
+
+          {/* ========================================== */}
+          {/* 4. TAB 3: 소통 센터 (실시간 채팅 & 0507)    */}
+          {/* ========================================== */}
+          {currentTab === 'communication' && (
+            <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+              <div className="border-b border-gray-200 pb-3">
+                <span className="text-xs font-bold text-blue-700 uppercase">기업-인재 안심 소통 센터</span>
+                <h1 className="text-2xl font-extrabold text-gray-900 mt-1">실시간 1:1 채용 상담 및 안심 통화</h1>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[600px]">
+                {/* Chat Channel List */}
+                <div className="lg:col-span-4 bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col h-full">
+                  <div className="p-4 bg-gray-50 border-b font-bold text-xs text-gray-700">채용 기업 대화방</div>
+                  <div className="divide-y overflow-y-auto flex-1">
+                    {jobs.map((job) => {
+                      const isSelected = job.id === selectedJobId;
+                      return (
+                        <div
+                          key={job.id}
+                          onClick={() => setSelectedJobId(job.id)}
+                          className={`p-4 cursor-pointer text-xs ${isSelected ? 'bg-blue-50/80 border-l-4 border-blue-700' : 'hover:bg-gray-50'}`}
+                        >
+                          <div className="flex justify-between font-bold text-gray-900">
+                            <span>{job.companyName}</span>
+                            <span className="text-[10px] text-gray-400 font-normal">방금</span>
+                          </div>
+                          <p className="text-gray-600 line-clamp-1 mt-1">{job.title}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Active Chat Box */}
+                <div className="lg:col-span-8 bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col h-full">
+                  <div className="p-4 bg-gray-50 border-b flex justify-between items-center text-xs">
+                    <div>
+                      <h3 className="font-bold text-gray-900 text-sm">{selectedJob.companyName}</h3>
+                      <p className="text-gray-500">담당: {selectedJob.recruiter.name} ({selectedJob.recruiter.title})</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-emerald-700 bg-emerald-50 px-2 py-1 rounded font-bold">0507 안심번호: {selectedJob.recruiter.safePhone}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 flex-1 overflow-y-auto space-y-3 bg-gray-50/30 text-xs">
+                    {messages.filter(m => m.jobId === selectedJobId).map((msg) => (
+                      <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
+                        <div className={`p-3 rounded-2xl max-w-[80%] ${msg.sender === 'user' ? 'bg-blue-700 text-white rounded-br-none' : 'bg-white border text-gray-900 rounded-bl-none shadow-xs'}`}>
+                          {msg.text}
+                        </div>
+                        <span className="text-[10px] text-gray-400 mt-1">{msg.timestamp}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Input Form */}
+                  <form onSubmit={(e) => { e.preventDefault(); const val = e.target.elements.chatInput.value; if (val.trim()) { handleSendMessage(val, selectedJobId); e.target.elements.chatInput.value = ''; } }} className="p-3 bg-white border-t flex gap-2">
+                    <input
+                      name="chatInput"
+                      type="text"
+                      placeholder="채용 담당자에게 문의사항을 입력하세요..."
+                      className="flex-1 px-4 py-2 bg-gray-50 border rounded-xl text-xs focus:bg-white focus:outline-none"
+                    />
+                    <button type="submit" className="px-4 py-2 bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1">
+                      <Icon name="send" className="w-3.5 h-3.5" />
+                      전송
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </main>
+          )}
+
+          {/* ========================================== */}
+          {/* 5. TAB 4: 내 페이지 (저장 목록, 삭제, 지원) */}
+          {/* ========================================== */}
+          {currentTab === 'my-page' && (
+            <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+              {/* Profile Card */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex items-center gap-4">
+                  <img src={userProfile.googleAvatar} alt="Profile" className="w-16 h-16 rounded-full border-2 border-blue-600 object-cover" />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h1 className="text-xl font-bold text-gray-900">{userProfile.name} 원장</h1>
+                      <span className="text-[11px] text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full font-bold">
+                        Google 1인 1계정 인증
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-0.5">{userProfile.specialty} ({userProfile.experienceYears}년) · 면허: {userProfile.licenseNumber}</p>
+                    <p className="text-xs text-gray-400">{userProfile.email} · {userProfile.phone}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Saved Items List with Delete (최신순 목록 & 삭제) */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold text-gray-900">저장된 AI 분석 리포트 ({savedItemsList.length}건)</h3>
+                <div className="space-y-2">
+                  {savedItemsList.map((item) => (
+                    <div key={item.id} className="bg-white p-4 rounded-xl border border-gray-200 flex justify-between items-center text-xs">
+                      <div>
+                        <h4 className="font-bold text-gray-900 text-sm">{item.title}</h4>
+                        <p className="text-gray-600 mt-0.5">{item.subtitle}</p>
+                        <span className="text-[10px] text-gray-400 mt-1 block">저장 일시: {item.savedAt}</span>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteSavedItem(item.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="삭제"
+                      >
+                        <Icon name="trash" className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Applications List */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold text-gray-900">지원 현황 추적 ({applications.length}건)</h3>
+                <div className="space-y-2">
+                  {applications.map((app) => (
+                    <div key={app.id} className="bg-white p-4 rounded-xl border border-gray-200 flex justify-between items-center text-xs">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-gray-900 text-sm">{app.companyName} - {app.jobTitle}</span>
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 font-bold rounded text-[10px]">{app.status}</span>
+                        </div>
+                        <span className="text-[10px] text-gray-400 mt-1 block">지원일: {app.appliedAt}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </main>
+          )}
+
+          {/* ========================================== */}
+          {/* 6. MODALS                                  */}
+          {/* ========================================== */}
+          {/* Apply Modal */}
+          {isApplyModalOpen && (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4">
+                <div className="flex justify-between items-center border-b pb-3">
+                  <h3 className="font-bold text-base text-gray-900">{selectedJob.companyName} 간편 지원</h3>
+                  <button onClick={() => setIsApplyModalOpen(false)}><Icon name="x" className="w-5 h-5 text-gray-400" /></button>
+                </div>
+                <div className="space-y-3 text-xs">
+                  <div className="p-3 bg-blue-50 rounded-xl text-blue-950 font-medium">
+                    {userProfile.name} 원장님의 15년 전문의 이력 및 AI 매칭 리포트가 함께 전달됩니다.
+                  </div>
+                  <textarea
+                    id="coverNoteInput"
+                    placeholder="채용 담당자에게 전달할 메모 또는 문의사항을 입력하세요."
+                    rows="3"
+                    className="w-full p-3 border rounded-xl text-xs bg-gray-50 focus:bg-white"
+                  ></textarea>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button onClick={() => setIsApplyModalOpen(false)} className="px-4 py-2 border rounded-lg text-xs font-semibold">취소</button>
+                  <button
+                    onClick={() => {
+                      const note = document.getElementById('coverNoteInput')?.value || '';
+                      handleConfirmApply(note);
+                    }}
+                    className="px-5 py-2 bg-blue-700 text-white rounded-lg text-xs font-bold"
+                  >
+                    지원서 제출
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Contact Modal */}
+          {isContactModalOpen && (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4">
+                <div className="flex justify-between items-center border-b pb-3">
+                  <h3 className="font-bold text-base text-gray-900">0507 안심 소통 및 문의</h3>
+                  <button onClick={() => setIsContactModalOpen(false)}><Icon name="x" className="w-5 h-5 text-gray-400" /></button>
+                </div>
+                <div className="space-y-3 text-xs">
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-950">
+                    <p className="font-bold">가상 안심번호: {selectedJob.recruiter.safePhone}</p>
+                    <p className="text-[11px] text-emerald-800 mt-1">개인 휴대폰 노출 없이 다이렉트 통화가 중계됩니다.</p>
+                  </div>
+                  <button
+                    onClick={() => { setIsContactModalOpen(false); setCurrentTab('communication'); }}
+                    className="w-full py-2.5 bg-blue-700 text-white rounded-xl font-bold"
+                  >
+                    1:1 실시간 채팅 열기
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Terms Modal */}
+          {isTermsModalOpen && (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl max-w-xl w-full p-6 space-y-4">
+                <div className="flex justify-between items-center border-b pb-3">
+                  <h3 className="font-bold text-base text-gray-900">이용약관 및 개인정보 보호 규정</h3>
+                  <button onClick={() => setIsTermsModalOpen(false)}><Icon name="x" className="w-5 h-5 text-gray-400" /></button>
+                </div>
+                <div className="space-y-3 text-xs text-gray-700 leading-relaxed max-h-80 overflow-y-auto">
+                  <p><strong>1. 1인 1계정 원칙:</strong> 취R업은 Google 본인 인증을 통한 1인 1계정만을 지원하며, 타인의 면허 도용을 엄격히 금지합니다.</p>
+                  <p><strong>2. 불법 구인 정보 차단:</strong> 근로기준법 및 직업안정법에 위배되는 허위·과장 채용 공고는 전담 검수팀 및 AI 필터링에 의해 즉각 영구 차단됩니다.</p>
+                  <p><strong>3. 0507 안심번호 보호:</strong> 구직자의 개인 연락처는 기업에 직접 노출되지 않고 가상 안심번호로 암호화 처리됩니다.</p>
+                </div>
+                <div className="flex justify-end pt-2">
+                  <button onClick={() => setIsTermsModalOpen(false)} className="px-5 py-2 bg-[#0f3b82] text-white rounded-lg font-bold text-xs">확인</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================== */}
+          {/* 7. GLOBAL FOOTER                           */}
+        </div>
+      );
+    }
+
+    // Mount to DOM
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
+
+  <div id="app-footer"></div>
+  <script src="assets/chrome.js"></script>
+  <script src="assets/auth-store.js"></script>
+  <script src="assets/i18n.js"></script>
+</body>
+</html>

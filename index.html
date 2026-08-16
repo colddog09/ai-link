@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>취R업 - 전문직 AI 매칭 & 기업 안정성 안심 채용 플랫폼</title>
+  <meta name="description" content="취R업 - 전문의, 전문직 경력 전환을 위한 AI 역량·조건 매칭, 기업 안정성 지표 분석 및 원스톱 안심 소통 플랫폼" />
+  <link rel="icon" href="assets/favicon.png" />
+
+  <link rel="stylesheet" href="assets/theme.css" />
+  <script src="assets/theme.js"></script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+  <script id="tailwind-config">
+    tailwind.config = { darkMode: "class" }
+  </script>
+
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+    /* ── 토큰 ─────────────────────────────────────────────── */
+    :root {
+      --ink:      #0a1f3d;   /* 브랜드 남색 */
+      --ink-soft: #35507a;
+      --mint:     #17a894;   /* 로고 화살표 민트 */
+      --mint-lit: #2fc7b4;
+      --paper:    #eef2f8;   /* 차가운 임상 용지 */
+      --card:     #ffffff;
+      --rule:     #c9d6e5;   /* 헤어라인 */
+      --seal:     #b5801f;   /* 인증 각인 – 이 색은 검증 표기에만 쓴다 */
+      --muted:    #4a5d7a;
+    }
+    html.dark {
+      --ink:      #dce6f7;
+      --ink-soft: #9fb4d6;
+      --mint:     #3ad8c2;
+      --mint-lit: #5ff0d8;
+      --paper:    #070d18;
+      --card:     #0f1a2e;
+      --rule:     #22304a;
+      --seal:     #e0ae54;
+      --muted:    #8496b3;
+    }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* 표제는 본문과 같은 Pretendard를 쓰되, 무게와 자간으로 위계를 만든다.
+       한글은 자간을 과하게 좁히면 받침이 뭉개져서 -0.015em까지만 줄인다. */
+    .display {
+      font-weight: 800;
+      letter-spacing: -0.015em;
+      line-height: 1.42;
+      word-break: keep-all;
+    }
+    p, li { word-break: keep-all; }
+    .mono  { font-family: 'IBM Plex Mono', 'SFMono-Regular', monospace; font-feature-settings: 'tnum' 1; }
+
+    /* 눈금자 라벨 – 차트 여백의 계측값처럼 */
+    .tick {
+      font-family: 'IBM Plex Mono', 'Pretendard', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+    }
+
+    .hairline { border-top: 1px solid var(--rule); }
+
+    /* 로드 시퀀스 */
+    .seq > * { opacity: 0; transform: translateY(14px); animation: seq 0.7s cubic-bezier(0.22,1,0.36,1) forwards; }
+    .seq > *:nth-child(1) { animation-delay: 0.05s; }
+    .seq > *:nth-child(2) { animation-delay: 0.15s; }
+    .seq > *:nth-child(3) { animation-delay: 0.25s; }
+    .seq > *:nth-child(4) { animation-delay: 0.35s; }
+    .seq > *:nth-child(5) { animation-delay: 0.45s; }
+    @keyframes seq { to { opacity: 1; transform: none; } }
+
+    /* 스크롤 진입.
+       스크립트가 실제로 붙었을 때만 감춘다. JS가 막히거나 관찰이 실패해도
+       내용이 사라지지 않도록 기본값은 보이는 상태다. */
+    .reveal { transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
+    .js-reveal .reveal:not(.in) { opacity: 0; transform: translateY(20px); }
+    .reveal.in { opacity: 1; transform: none; }
+    .meter > span { width: var(--w); }
+    .js-reveal .reveal:not(.in) .meter > span { width: 0; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .seq > *, .reveal { opacity: 1; transform: none; animation: none; transition: none; }
+    }
+
+    /* 카드 – 차트지 위의 기록지 */
+    .sheet {
+      background: var(--card);
+      border: 1px solid var(--rule);
+      border-radius: 18px;
+    }
+    .sheet-hover { transition: border-color .35s ease, transform .35s cubic-bezier(.22,1,.36,1); }
+    .sheet-hover:hover { border-color: var(--mint); transform: translateY(-3px); }
+
+    /* 인증 각인 */
+    .seal {
+      color: var(--seal);
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      letter-spacing: 0.14em;
+    }
+
+    /* 계측 막대 */
+    .meter { height: 3px; background: var(--rule); position: relative; overflow: hidden; }
+    .meter > span { position: absolute; inset: 0 auto 0 0; background: var(--mint); width: 0; transition: width 1.1s cubic-bezier(.22,1,.36,1); }
+    .in .meter > span { width: var(--w); }
+
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--mint);
+      outline-offset: 3px;
+    }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <div id="app-header"></div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       히어로 — 좌: 선언, 우: 이직 곡선 판독지
+       ══════════════════════════════════════════════════════════ -->
+  <section class="px-5 sm:px-8 lg:px-12 pt-14 pb-20 md:pt-20 md:pb-28">
+    <div class="max-w-[1180px] mx-auto">
+
+      <div class="seq">
+        <p class="tick mb-6">의료 · 금융 · IT 전문직</p>
+
+        <h1 class="display mb-7"
+            style="font-size: clamp(1.75rem, 3.9vw, 2.75rem); line-height: 1.4;">
+          AI에 의해 뺏긴 직업을<br />
+          찾고 있나요?<br />
+          <span style="color: var(--mint)">당신의 적성에 맞는 곳을<br class="sm:hidden" /> 직접 선택하세요!</span>
+        </h1>
+
+        <p class="text-[16px] leading-[1.9] mb-9 max-w-[42ch]" style="color: var(--muted)">
+          AI가 하루가 다르게 사람 일을 가져가는 중입니다. 그래도 사람이
+          최종 판단을 맡아야 하는 자리는 남아 있습니다. 취R업은 그런 자리만 골라
+          모으고, 오래 다닐 수 있는 곳인지 숫자로 먼저 보여드립니다.
+        </p>
+
+        <div class="flex flex-wrap items-center gap-3 mb-10">
+          <a href="company.html"
+             class="inline-flex items-center gap-2 px-6 py-3.5 text-[14px] font-bold text-white transition"
+             style="background: var(--ink); border-radius: 999px;">
+            공고 보기
+            <span class="material-symbols-outlined" style="font-size:18px">arrow_forward</span>
+          </a>
+          <a href="assessment.html"
+             class="inline-flex items-center gap-2 px-6 py-3.5 text-[14px] font-bold transition sheet sheet-hover"
+             style="color: var(--ink); border-radius: 999px;">
+            내 조건 입력하기
+          </a>
+        </div>
+
+        <div class="flex items-center gap-3 mb-12">
+          <span class="seal mono text-[10px] px-2.5 py-1">VERIFIED</span>
+          <span class="text-[13px]" style="color: var(--muted)">
+            사람이 최종 결정을 내리는 직무만 골라 싣습니다
+          </span>
+        </div>
+
+        <div class="grid grid-cols-3 gap-6 max-w-[36rem] pt-8" style="border-top: 1px solid var(--rule)">
+          <div>
+            <p class="mono text-[22px] leading-none mb-2">2.4<span class="text-[12px]">일</span></p>
+            <p class="text-[12.5px]" style="color: var(--muted)">평균 매칭</p>
+          </div>
+          <div>
+            <p class="mono text-[22px] leading-none mb-2">94.8<span class="text-[12px]">%</span></p>
+            <p class="text-[12.5px]" style="color: var(--muted)">역량 정합도</p>
+          </div>
+          <div>
+            <p class="mono text-[22px] leading-none mb-2" style="color: var(--mint)">99.4<span class="text-[12px]">%</span></p>
+            <p class="text-[12.5px]" style="color: var(--muted)">안정성 검증</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       이용 후기
+       ══════════════════════════════════════════════════════════ -->
+  <section class="px-5 sm:px-8 lg:px-12 py-16 md:py-24"
+           style="border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);">
+    <div class="max-w-[900px] mx-auto">
+      <p class="tick mb-8 reveal">일자리를 되찾은 사람</p>
+
+      <figure class="reveal">
+        <blockquote class="display text-[17px] sm:text-[20px] leading-[1.85] mb-8">
+          “딸 하나 둔 의사 아빠인데 직장을 잃어 걱정이 많았습니다. 경력과 근무 조건,
+          지역을 파악해 공고를 정리해주니 직접 알아보는 것보다 훨씬 수월했고,
+          검색해도 안 나오던 자리까지 볼 수 있었습니다. 또 잘릴까 봐 두려웠는데
+          근속 연수와 고용안정등급을 숫자로 보여줘서 부담을 덜었고, 회사와 바로
+          연결돼 문의하기도 편했습니다. 덕분에 다시 시작합니다. 무엇보다 딸아이
+          웃는 얼굴을 걱정 없이 볼 수 있어 좋습니다.”
+        </blockquote>
+
+        <figcaption class="flex items-center gap-4">
+          <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200"
+               alt="김건우 님" class="w-12 h-12 rounded-full object-cover" />
+          <div>
+            <p class="text-[15px] font-bold">김건우 · 45세</p>
+            <p class="text-[13.5px]" style="color: var(--muted)">내과 전문의 · 2026년 3월 재취업</p>
+          </div>
+        </figcaption>
+      </figure>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       기능 – 재취업의 불안함을 확신으로
+       ══════════════════════════════════════════════════════════ -->
+  <section class="px-5 sm:px-8 lg:px-12 py-16 md:py-24">
+    <div class="max-w-[1180px] mx-auto">
+      <div class="text-center max-w-[46ch] mx-auto mb-12 reveal">
+        <h2 class="display text-[26px] sm:text-[34px] leading-[1.35] mb-4">
+          일자리가 사라지는 속도보다<br />다시 찾는 속도가 빠르도록.
+        </h2>
+        <p class="text-[14.5px] leading-[1.95]" style="color: var(--muted)">
+          의료, 금융, IT처럼 자동화 압력이 큰 분야일수록 사람의 판단이 남는 자리가 따로 있습니다. 어디에 남아 있는지 찾아 드립니다.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-5 gap-4">
+
+        <!-- AI 역량 분석 (넓은 칸) -->
+        <article class="sheet sheet-hover p-7 sm:p-9 md:col-span-3 reveal relative overflow-hidden">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-6"
+               style="background: var(--ink); color: #fff;">
+            <span class="material-symbols-outlined" style="font-size:22px">neurology</span>
+          </div>
+          <h3 class="display text-[20px] mb-3">AI 역량 분석</h3>
+          <p class="text-[14.5px] leading-[1.95] max-w-[40ch]" style="color: var(--muted)">
+            없어진 것은 직함이지 실력이 아닙니다. 이력서 문장을 뜯어보고
+            지금까지 쌓은 판단력이 어느 산업에서 그대로 값을 하는지,
+            본인은 미처 생각 못 한 경로까지 짚어 드립니다.
+          </p>
+
+          <!-- 역량이 다른 축으로 옮겨 붙는 모습 -->
+          <svg viewBox="0 0 260 90" class="w-full max-w-[260px] h-auto mt-7" aria-hidden="true">
+            <line x1="10" y1="70" x2="250" y2="70" stroke="var(--rule)" stroke-width="1" />
+            <rect x="18"  y="40" width="16" height="30" fill="var(--rule)" />
+            <rect x="46"  y="30" width="16" height="40" fill="var(--rule)" />
+            <rect x="74"  y="48" width="16" height="22" fill="var(--rule)" />
+            <rect x="150" y="22" width="16" height="48" fill="var(--mint)" />
+            <rect x="178" y="14" width="16" height="56" fill="var(--mint)" />
+            <rect x="206" y="34" width="16" height="36" fill="var(--mint)" />
+            <path d="M100 44 C 118 44, 126 34, 140 32" fill="none" stroke="var(--ink-soft)" stroke-width="1.4" stroke-dasharray="3 3" />
+          </svg>
+        </article>
+
+        <!-- 스마트 매칭 -->
+        <article class="sheet sheet-hover p-7 sm:p-9 md:col-span-2 reveal">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-6"
+               style="background: rgba(23,168,148,0.14); color: var(--mint);">
+            <span class="material-symbols-outlined" style="font-size:22px">handshake</span>
+          </div>
+          <h3 class="display text-[20px] mb-3">스마트 매칭</h3>
+          <p class="text-[14.5px] leading-[1.95]" style="color: var(--muted)">
+            키워드가 겹친다고 추천하지 않습니다. 위치와 근무 형태, 재무 안정성에
+            더해 그 직무가 몇 년 안에 자동화될 자리인지까지 따져 남깁니다.
+          </p>
+
+          <div class="mt-7 space-y-2.5">
+            <div class="flex items-center justify-between text-[11px]">
+              <span style="color: var(--muted)">위치</span>
+              <span class="mono" style="color: var(--mint)">일치</span>
+            </div>
+            <div class="meter" style="--w: 88%"><span></span></div>
+            <div class="flex items-center justify-between text-[11px] pt-1">
+              <span style="color: var(--muted)">근무 조건</span>
+              <span class="mono" style="color: var(--mint)">일치</span>
+            </div>
+            <div class="meter" style="--w: 74%"><span></span></div>
+            <div class="flex items-center justify-between text-[11px] pt-1">
+              <span style="color: var(--muted)">재무 안정성</span>
+              <span class="mono" style="color: var(--mint)">AAA</span>
+            </div>
+            <div class="meter" style="--w: 95%"><span></span></div>
+          </div>
+        </article>
+
+        <!-- 데이터 시각화 -->
+        <article class="sheet sheet-hover p-7 sm:p-9 md:col-span-2 reveal">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-6"
+               style="background: var(--ink); color: #fff;">
+            <span class="material-symbols-outlined" style="font-size:22px">bar_chart</span>
+          </div>
+          <h3 class="display text-[20px] mb-3">데이터 시각화</h3>
+          <p class="text-[14.5px] leading-[1.95]" style="color: var(--muted)">
+            좋은 회사라는 말은 빼겠습니다. 평균 근속 연수, 임금 백분위,
+            직무 자동화 위험도를 그대로 숫자로 보여드리니 직접 판단하세요.
+          </p>
+
+          <svg viewBox="0 0 240 80" class="w-full h-auto mt-7" aria-hidden="true">
+            <rect x="10"  y="46" width="34" height="34" fill="var(--rule)" />
+            <rect x="56"  y="34" width="34" height="46" fill="var(--rule)" />
+            <rect x="102" y="52" width="34" height="28" fill="var(--rule)" />
+            <rect x="148" y="24" width="34" height="56" fill="var(--mint)" />
+            <rect x="194" y="12" width="34" height="68" fill="var(--ink-soft)" />
+          </svg>
+        </article>
+
+        <!-- 직접 소통 채널 (강조 카드) -->
+        <article class="sheet sheet-hover p-7 sm:p-9 md:col-span-3 reveal relative overflow-hidden"
+                 style="background: var(--ink); border-color: var(--ink);">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-6"
+               style="background: rgba(255,255,255,0.12); color: #fff;">
+            <span class="material-symbols-outlined" style="font-size:22px">forum</span>
+          </div>
+          <h3 class="display text-[20px] mb-3" style="color: #fff;">직접 소통 채널</h3>
+          <p class="text-[14.5px] leading-[1.95] max-w-[40ch]" style="color: rgba(255,255,255,0.72);">
+            지원서를 넣고 기다리는 대신 먼저 물어보세요. 0507 안심번호와
+            플랫폼 메시지로 담당자에게 바로 확인합니다. 번호는 끝까지 넘어가지 않습니다.
+          </p>
+
+          <div class="mt-7 flex items-center gap-3">
+            <span class="w-2 h-2 rounded-full" style="background: var(--mint-lit);"></span>
+            <span class="mono text-[11px]" style="color: rgba(255,255,255,0.72);">평균 응답 4시간 12분</span>
+          </div>
+
+          <div class="absolute -right-6 -bottom-6 w-32 h-32 rounded-full flex items-center justify-center"
+               style="background: rgba(255,255,255,0.06);" aria-hidden="true">
+            <span class="material-symbols-outlined" style="font-size:34px; color: rgba(255,255,255,0.5)">mail</span>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       추천 공고
+       ══════════════════════════════════════════════════════════ -->
+  <section class="px-5 sm:px-8 lg:px-12 py-16 md:py-20">
+    <div class="max-w-[1180px] mx-auto">
+      <div class="flex flex-wrap items-end justify-between gap-4 mb-9 reveal">
+        <div>
+          <p class="tick mb-3">오늘의 매칭</p>
+          <h2 class="display text-[27px] sm:text-[32px] leading-tight">입력한 조건과 맞는 자리</h2>
+        </div>
+        <a href="company.html" class="text-[14px] font-bold inline-flex items-center gap-1.5 pb-1" style="color: var(--ink); border-bottom: 1px solid var(--mint)">
+          전체 공고
+          <span class="material-symbols-outlined" style="font-size:16px">arrow_forward</span>
+        </a>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-5">
+        <!-- 카드 1 -->
+        <a href="detail.html?jobId=snuh-senior-medical-consultant" class="sheet sheet-hover p-6 flex flex-col reveal">
+          <div class="flex items-center justify-between mb-5">
+            <span class="mono text-[11px]" style="color: var(--muted)">SNUH · 서울 종로</span>
+            <span class="seal mono text-[9px] px-2 py-0.5">AAA</span>
+          </div>
+          <h3 class="text-[17px] font-bold leading-[1.5] mb-2">시니어 의료 컨설턴트</h3>
+          <p class="text-[13.5px] mb-5" style="color: var(--muted)">서울대학교병원 · 전문의 자문역</p>
+
+          <!-- 근속 스파크라인: 시그니처 곡선의 축소판 -->
+          <svg viewBox="0 0 200 44" class="w-full h-9 mb-5" aria-hidden="true">
+            <path d="M4 34 C 40 33, 70 35, 104 32 C 138 28, 168 16, 196 8" fill="none" stroke="var(--mint)" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+
+          <div class="mt-auto pt-4 flex items-end justify-between" style="border-top: 1px solid var(--rule)">
+            <div>
+              <p class="tick mb-1">예상 연봉</p>
+              <p class="mono text-[14px]">1.2억 ~ 1.5억</p>
+            </div>
+            <span class="mono text-[13px]" style="color: var(--mint)">94%</span>
+          </div>
+        </a>
+
+        <!-- 카드 2 -->
+        <a href="detail.html?jobId=severance-checkup-director" class="sheet sheet-hover p-6 flex flex-col reveal">
+          <div class="flex items-center justify-between mb-5">
+            <span class="mono text-[11px]" style="color: var(--muted)">세브란스 · 서울 중구</span>
+            <span class="seal mono text-[9px] px-2 py-0.5">AAA</span>
+          </div>
+          <h3 class="text-[17px] font-bold leading-[1.5] mb-2">내과 전문의 · 검진센터 소장급</h3>
+          <p class="text-[13.5px] mb-5" style="color: var(--muted)">세브란스 체크업 센터 · 당직 없음</p>
+
+          <svg viewBox="0 0 200 44" class="w-full h-9 mb-5" aria-hidden="true">
+            <path d="M4 36 C 42 35, 74 30, 106 30 C 140 29, 170 20, 196 12" fill="none" stroke="var(--mint)" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+
+          <div class="mt-auto pt-4 flex items-end justify-between" style="border-top: 1px solid var(--rule)">
+            <div>
+              <p class="tick mb-1">예상 연봉</p>
+              <p class="mono text-[14px]">1.2억 ~ 1.6억</p>
+            </div>
+            <span class="mono text-[13px]" style="color: var(--mint)">91%</span>
+          </div>
+        </a>
+
+        <!-- 카드 3 -->
+        <a href="detail.html?jobId=kakao-healthcare-lead" class="sheet sheet-hover p-6 flex flex-col reveal">
+          <div class="flex items-center justify-between mb-5">
+            <span class="mono text-[11px]" style="color: var(--muted)">카카오헬스케어 · 판교</span>
+            <span class="seal mono text-[9px] px-2 py-0.5">AA+</span>
+          </div>
+          <h3 class="text-[17px] font-bold leading-[1.5] mb-2">디지털 헬스케어 임상 총괄</h3>
+          <p class="text-[13.5px] mb-5" style="color: var(--muted)">VP 직급 · 스톡옵션 포함</p>
+
+          <svg viewBox="0 0 200 44" class="w-full h-9 mb-5" aria-hidden="true">
+            <path d="M4 32 C 38 34, 68 33, 100 28 C 136 22, 166 14, 196 6" fill="none" stroke="var(--mint)" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+
+          <div class="mt-auto pt-4 flex items-end justify-between" style="border-top: 1px solid var(--rule)">
+            <div>
+              <p class="tick mb-1">예상 연봉</p>
+              <p class="mono text-[14px]">1.4억 + 옵션</p>
+            </div>
+            <span class="mono text-[13px]" style="color: var(--mint)">88%</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       절차 — 실제로 순서가 있는 흐름이라 번호를 붙인다
+       ══════════════════════════════════════════════════════════ -->
+  <section class="px-5 sm:px-8 lg:px-12 py-16 md:py-20" style="border-top: 1px solid var(--rule)">
+    <div class="max-w-[1180px] mx-auto">
+      <p class="tick mb-10 reveal">지원까지</p>
+
+      <ol class="grid md:grid-cols-3 gap-8 md:gap-12">
+        <li class="reveal">
+          <div class="flex items-baseline gap-4 mb-4">
+            <span class="mono text-[13px]" style="color: var(--mint)">01</span>
+            <span class="flex-1 hairline"></span>
+          </div>
+          <h3 class="display text-[20px] mb-3">경력을 적습니다</h3>
+          <p class="text-[14.5px] leading-[1.95]" style="color: var(--muted)">
+            내페이지에서 경력과 자격, 원하는 근무 형태를 적습니다. 10분이면 끝나고, 나중에 고쳐도 됩니다.
+          </p>
+        </li>
+        <li class="reveal">
+          <div class="flex items-baseline gap-4 mb-4">
+            <span class="mono text-[13px]" style="color: var(--mint)">02</span>
+            <span class="flex-1 hairline"></span>
+          </div>
+          <h3 class="display text-[20px] mb-3">사람 몫으로 남은 자리만</h3>
+          <p class="text-[14.5px] leading-[1.95]" style="color: var(--muted)">
+            자동화로 먼저 사라질 직무는 걸러 냅니다. 남은 공고 중 조건에 맞는 것만 보여드리고, 안 맞는 건 아예 안 뜹니다.
+          </p>
+        </li>
+        <li class="reveal">
+          <div class="flex items-baseline gap-4 mb-4">
+            <span class="mono text-[13px]" style="color: var(--mint)">03</span>
+            <span class="flex-1 hairline"></span>
+          </div>
+          <h3 class="display text-[20px] mb-3">번호 안 주고 물어봅니다</h3>
+          <p class="text-[14.5px] leading-[1.95]" style="color: var(--muted)">
+            0507 번호랑 채팅으로 담당자에게 바로 묻습니다. 지원 전에 물어봐도 지원 이력엔 안 남습니다.
+          </p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       마무리 — 개인 / 기업 두 갈래
+       ══════════════════════════════════════════════════════════ -->
+  <section class="px-5 sm:px-8 lg:px-12 pb-20">
+    <div class="max-w-[1180px] mx-auto grid md:grid-cols-2 gap-5">
+      <div class="sheet sheet-hover p-8 sm:p-10 reveal">
+        <p class="tick mb-4">전문직 회원</p>
+        <h3 class="display text-[24px] leading-snug mb-4">일자리를 다시 찾는 중이라면</h3>
+        <p class="text-[14.5px] leading-[1.95] mb-7" style="color: var(--muted)">
+          한 번 적어 두면 조건에 맞는 자리가 올라올 때마다 목록이 바뀝니다.
+        </p>
+        <a href="assessment.html" class="inline-flex items-center gap-2 px-6 py-3.5 text-[14px] font-bold text-white" style="background: var(--ink); border-radius: 999px;">
+          조건 입력하기
+          <span class="material-symbols-outlined" style="font-size:18px">arrow_forward</span>
+        </a>
+      </div>
+
+      <div class="sheet sheet-hover p-8 sm:p-10 reveal">
+        <p class="tick mb-4">기업 회원</p>
+        <h3 class="display text-[24px] leading-snug mb-4">사람을 구하는 중이라면</h3>
+        <p class="text-[14.5px] leading-[1.95] mb-7" style="color: var(--muted)">
+          자동화로 대체할 수 없는 사람을 찾고 계신다면, 기업으로 로그인해 공고를 직접 올리세요.
+        </p>
+        <a href="ls.html?role=company" class="inline-flex items-center gap-2 px-6 py-3.5 text-[13px] font-bold" style="border: 1.5px solid var(--ink); color: var(--ink); border-radius: 999px;">
+          기업 회원 로그인
+          <span class="material-symbols-outlined" style="font-size:18px">arrow_forward</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <div id="app-footer"></div>
+
+  <script src="assets/chrome.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="assets/auth-store.js"></script>
+  <script src="assets/i18n.js"></script>
+  <script>
+    // 스크롤 진입 시 계측 막대와 문단을 순서대로 드러낸다
+    (function () {
+      var items = document.querySelectorAll('.reveal');
+      var showAll = function () {
+        items.forEach(function (el) { el.classList.add('in'); });
+      };
+
+      if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        showAll();
+        return;
+      }
+
+      document.documentElement.classList.add('js-reveal');
+      // 관찰이 어떤 이유로든 동작하지 않으면 2.5초 뒤 전부 드러낸다
+      setTimeout(showAll, 2500);
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry, i) {
+          if (!entry.isIntersecting) return;
+          var el = entry.target;
+          setTimeout(function () { el.classList.add('in'); }, i * 90);
+          io.unobserve(el);
+        });
+      }, { threshold: 0.18, rootMargin: '0px 0px -40px 0px' });
+      items.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+</body>
+</html>

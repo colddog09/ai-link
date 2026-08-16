@@ -1,0 +1,96 @@
+/* ==========================================================================
+   취R업 – 기업이 직접 등록한 공고 저장소
+   Firestore 연결이 없거나 실패해도 화면이 비지 않도록 localStorage를
+   1차 저장소로 쓰고, Firestore가 살아 있으면 같은 문서를 함께 기록한다.
+   ========================================================================== */
+(function () {
+  var KEY = 'chwireup-jobs';
+
+  function read() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function write(list) {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(list));
+    } catch (e) {}
+  }
+
+  function slug(name) {
+    return (
+      'emp-' +
+      String(name || 'job')
+        .trim()
+        .replace(/\s+/g, '-')
+        .slice(0, 24) +
+      '-' +
+      Math.random().toString(36).slice(2, 7)
+    );
+  }
+
+  function add(job) {
+    var list = read();
+    var entry = Object.assign(
+      {
+        id: slug(job.companyName),
+        matchRate: 80,
+        isAiRecommended: false,
+        tag: '채용중',
+        imageUrl:
+          'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=600',
+        createdAt: new Date().toISOString(),
+        source: 'employer',
+        ownerUid: (window.ChwireupAccounts && window.ChwireupAccounts.uid()) || null
+      },
+      job
+    );
+    list.unshift(entry);
+    write(list);
+
+    // 목록 화면과 같은 데이터베이스에 남긴다
+    try {
+      var db = window.ChwireupDB && window.ChwireupDB.db();
+      if (db) db.collection('jobs').doc(entry.id).set(entry);
+    } catch (e) {
+      console.warn('Firestore 저장 실패, 로컬에만 기록합니다:', e);
+    }
+
+    return entry;
+  }
+
+  function remove(id) {
+    var list = read().filter(function (j) {
+      return j.id !== id;
+    });
+    write(list);
+    try {
+      var db = window.ChwireupDB && window.ChwireupDB.db();
+      if (db) db.collection('jobs').doc(id).delete();
+    } catch (e) {}
+  }
+
+  // 기업명이 바뀌어도 내 공고가 사라지지 않도록 uid를 먼저 본다
+  function byOwner(owner) {
+    var uid = (window.ChwireupAccounts && window.ChwireupAccounts.uid()) || null;
+    return read().filter(function (j) {
+      if (uid && j.ownerUid) return j.ownerUid === uid;
+      return j.owner === owner;
+    });
+  }
+
+  function find(id) {
+    var hit = null;
+    read().forEach(function (j) {
+      if (j.id === id) hit = j;
+    });
+    return hit;
+  }
+
+  window.ChwireupJobs = { list: read, add: add, remove: remove, byOwner: byOwner, find: find };
+})();
