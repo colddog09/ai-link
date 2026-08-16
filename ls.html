@@ -278,8 +278,8 @@
           <p id="form-desc" class="text-[13.5px]" style="color: var(--muted)">개인 회원으로 로그인합니다</p>
         </div>
 
-        <!-- 역할 -->
-        <div class="grid grid-cols-2 gap-3 mb-6">
+        <!-- 역할: 회원가입에서만 고른다. 로그인은 계정에 저장된 역할을 따른다. -->
+        <div id="role-picker" class="grid grid-cols-2 gap-3 mb-6">
           <button type="button" class="role" data-role="personal" data-on="true">
             <span class="role-check"><span class="material-symbols-outlined" style="font-size:13px">check</span></span>
             <span class="material-symbols-outlined block mb-2" style="font-size:20px; color: var(--mint)">person</span>
@@ -307,7 +307,7 @@
           <!-- 로그인은 영문 아이디로 한다 -->
           <div class="field">
             <input id="userid" type="text" placeholder=" " required autocomplete="username"
-                   pattern="[A-Za-z0-9._\-]{4,20}" value="drkim" />
+                   pattern="[A-Za-z0-9._\-]{4,20}" value="kimdoctor" />
             <label for="userid">아이디 (영문·숫자)</label>
           </div>
 
@@ -318,7 +318,7 @@
           </div>
 
           <div class="field">
-            <input id="password" type="password" placeholder=" " required minlength="6" autocomplete="current-password" value="drkim1234" />
+            <input id="password" type="password" placeholder=" " required minlength="6" autocomplete="current-password" value="kimdoctor1234" />
             <label for="password">비밀번호</label>
           </div>
 
@@ -389,7 +389,7 @@
           signupDesc: '경력을 적어 두면 맞는 공고만 골라 보여줍니다',
           nameLabel: '이름',
           extraLabel: '전문 분야 / 면허',
-          demoId: 'drkim',
+          demoId: 'kimdoctor',
           demoName: '김건우',
           after: 'assessment.html'
         },
@@ -400,7 +400,7 @@
           signupDesc: '사업자 정보를 확인한 뒤 공고를 올릴 수 있습니다',
           nameLabel: '기업명',
           extraLabel: '사업자등록번호',
-          demoId: 'snuh',
+          demoId: 'snuhcorp',
           demoName: '서울대학교병원',
           after: 'employer.html'
         }
@@ -418,12 +418,15 @@
         var signup = mode === 'signup';
 
         el('form-title').textContent = signup ? c.signupTitle : c.loginTitle;
-        el('form-desc').textContent = signup ? c.signupDesc : c.loginDesc;
+        el('form-desc').textContent = signup
+          ? c.signupDesc
+          : '아이디와 비밀번호를 입력하면 계정에 맞는 화면으로 이동합니다';
         el('cta-text').textContent = signup ? '가입하고 시작하기' : '로그인';
         el('label-name').textContent = c.nameLabel;
         el('label-extra').textContent = c.extraLabel;
 
         el('field-name').classList.toggle('hidden', !signup);
+        el('role-picker').classList.toggle('hidden', !signup);
         el('field-extra').classList.toggle('hidden', !signup);
         el('field-confirm').classList.toggle('hidden', !signup);
         el('field-region').classList.toggle('hidden', !signup);
@@ -537,32 +540,30 @@
               (res.mode === 'demo' ? ' (데모 모드: 이 브라우저에만 저장됩니다)' : ' Firebase에 저장했습니다.')
           );
 
-          var go = (res.role === 'company' ? 'employer.html' : role === 'company' ? 'employer.html' : c.after);
+          // 로그인은 계정에 저장된 역할을 따르고, 가입은 방금 고른 역할을 쓴다
+          var resolvedRole =
+            res.role || (mode === 'signup' ? role : window.ChwireupAuth.role()) || role;
+          var go = resolvedRole === 'company' ? 'employer.html' : 'assessment.html';
           setTimeout(function () { location.href = go; }, 750);
         } catch (err) {
           alertBox('error', window.ChwireupAccounts.message(err));
 
-          // 계정이 없어서 막힌 경우라면 회원가입 화면으로 바로 넘겨준다
-          if (mode === 'login' && window.ChwireupAccounts.isNoAccount(err)) {
-            // Firebase 연결 전에 만든 계정은 이 브라우저에만 있다. 그 사실을 알려준다.
-            var local = null;
-            try {
-              local = (JSON.parse(localStorage.getItem('chwireup-local-accounts') || '{}') || {})[
-                userId.toLowerCase()
-              ];
-            } catch (e2) {}
+          /* 예전에는 여기서 회원가입 화면으로 자동 전환했는데, 비밀번호만
+             틀린 경우에도 넘어가 '이미 쓰이는 아이디' 오류가 이어졌다.
+             지금은 화면을 그대로 두고 무엇을 확인할지만 알려준다. */
+          var local = null;
+          try {
+            local = (JSON.parse(localStorage.getItem('chwireup-local-accounts') || '{}') || {})[
+              userId.toLowerCase()
+            ];
+          } catch (e2) {}
 
-            if (local) {
-              alertBox(
-                'error',
-                '"' + userId + '"는 서버 연결 전에 만든 계정이라 이 브라우저에만 남아 있습니다. ' +
-                  '같은 아이디로 다시 회원가입하면 정식 계정이 만들어집니다.'
-              );
-            }
-
-            mode = 'signup';
-            paint();
-            el('name').focus();
+          if (mode === 'login' && local && window.ChwireupAccounts.isNoAccount(err)) {
+            alertBox(
+              'error',
+              '"' + userId + '"는 서버 연결 전에 만든 계정이라 이 브라우저에만 남아 있습니다. ' +
+                '같은 아이디로 회원가입을 다시 하면 정식 계정이 만들어집니다.'
+            );
           }
 
           cta.removeAttribute('data-busy');

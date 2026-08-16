@@ -149,28 +149,30 @@
       profile
     );
 
-    // 프로필 저장은 기다리지 않는다. Firestore 응답이 늦으면 가입 자체가
-    // 멈춰 버리기 때문에, 실패해도 로그인은 그대로 진행시킨다.
+    /* 역할 색인은 반드시 남겨야 한다. 이게 없으면 다음 로그인 때 기업인지
+       개인인지 알 수 없어 엉뚱한 화면으로 들어간다. 그래서 기다리되,
+       Firestore가 늦으면 가입이 멈추지 않도록 시간 제한을 둔다. */
     if (db) {
       var note = function (e) {
-        console.warn('프로필 저장 실패(규칙 확인 필요):', e);
+        console.warn('프로필 저장 실패(규칙 확인 필요):', e && e.code);
       };
+
+      var indexDoc = {
+        uid: uid,
+        userId: identifier,
+        email: email,
+        role: role,
+        name: profile.name || ''
+      };
+
       try {
-        db.collection(collectionFor(role)).doc(uid).set(doc, { merge: true }).catch(note);
-        // 역할을 한 곳에서 조회할 수 있게 색인을 따로 둔다
-        db.collection('accounts')
-          .doc(uid)
-          .set(
-            {
-              uid: uid,
-              userId: identifier,
-              email: email,
-              role: role,
-              name: profile.name || ''
-            },
-            { merge: true }
-          )
-          .catch(note);
+        await withTimeout(
+          Promise.all([
+            db.collection('accounts').doc(uid).set(indexDoc, { merge: true }),
+            db.collection(collectionFor(role)).doc(uid).set(doc, { merge: true })
+          ]),
+          5000
+        );
       } catch (e) {
         note(e);
       }
@@ -202,16 +204,47 @@
     var name = fallbackName;
     var storedRole = role;
 
+    /* 로그인 직후에는 Firestore가 아직 새 토큰을 들고 있지 않아 첫 조회가
+       거부될 수 있다. 토큰을 한 번 받아온 뒤 몇 차례 다시 시도한다.
+       이 조회가 실패하면 기업 계정이 개인으로 들어가는 문제가 생긴다. */
     if (db) {
       try {
-        var acc = await withTimeout(db.collection('accounts').doc(uid).get(), 2500);
-        if (acc && acc.exists) {
-          var data = acc.data();
-          if (data.role) storedRole = data.role;
-          if (data.name) name = data.name;
-        }
+        await withTimeout(cred.user.getIdToken(true), 3000);
       } catch (e) {
-        console.warn('계정 정보를 읽지 못해 입력값으로 진행합니다:', e && e.code);
+        console.warn('토큰 갱신 지연:', e && e.code);
+      }
+
+      for (var attempt = 0; attempt < 3; attempt++) {
+        try {
+          var acc = await withTimeout(db.collection('accounts').doc(uid).get(), 3000);
+          if (acc && acc.exists) {
+            var data = acc.data();
+            if (data.role) storedRole = data.role;
+            if (data.name) name = data.name;
+            break;
+          }
+          // 문서가 아직 없으면 기다릴 이유가 없다
+          break;
+        } catch (e) {
+          if (attempt === 2) {
+            console.warn('계정 정보를 읽지 못해 입력값으로 진행합니다:', e && e.code);
+          } else {
+            await new Promise(function (r) {
+              setTimeout(r, 400);
+            });
+          }
+        }
+      }
+
+      // 계정 색인이 없던 옛 계정은 어느 컬렉션에 있는지로 역할을 판단한다
+      if (storedRole === role) {
+        try {
+          var comp = await withTimeout(db.collection('companies').doc(uid).get(), 2000);
+          if (comp && comp.exists) {
+            storedRole = 'company';
+            if (comp.data().name) name = comp.data().name;
+          }
+        } catch (e) {}
       }
     }
 
@@ -278,7 +311,7 @@
     if (code === 'auth/user-not-found') return '가입되지 않은 아이디입니다.';
     // 최근 Firebase는 없는 계정과 틀린 비밀번호를 같은 코드로 돌려준다
     if (code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials')
-      return '가입되지 않은 아이디이거나 비밀번호가 다릅니다. 처음이라면 회원가입부터 해주세요.';
+      return '비밀번호가 맞지 않거나 없는 아이디입니다. 대소문자와 오타를 확인해 주세요.';
     if (code === 'auth/too-many-requests') return '시도가 많았습니다. 잠시 후 다시 해주세요.';
     if (code === 'auth/network-request-failed') return '네트워크에 연결하지 못했습니다.';
     if (code === 'auth/operation-not-allowed')
