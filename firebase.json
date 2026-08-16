@@ -1,18 +1,6 @@
 {
-  "hosting": {
-    "public": "dist",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "cleanUrls": true,
-    "headers": [
-      {
-        "source": "/assets/**",
-        "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=3600" }
-        ]
-      }
-    ]
-  },
   "firestore": {
+    "database": "ai-studio-ailink-99cc2c84-f5b6-4b68-ab80-c06409b6e80f",
     "rules": "firestore.rules"
   }
 }
