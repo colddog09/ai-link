@@ -154,22 +154,30 @@
       profile
     );
 
+    // 프로필 저장은 기다리지 않는다. Firestore 응답이 늦으면 가입 자체가
+    // 멈춰 버리기 때문에, 실패해도 로그인은 그대로 진행시킨다.
     if (db) {
-      try {
-        await db.collection(collectionFor(role)).doc(uid).set(doc, { merge: true });
-        // 역할을 한 곳에서 조회할 수 있게 색인을 따로 둔다
-        await db.collection('accounts').doc(uid).set(
-          {
-            uid: uid,
-            userId: identifier,
-            email: email,
-            role: role,
-            name: profile.name || ''
-          },
-          { merge: true }
-        );
-      } catch (e) {
+      var note = function (e) {
         console.warn('프로필 저장 실패(규칙 확인 필요):', e);
+      };
+      try {
+        db.collection(collectionFor(role)).doc(uid).set(doc, { merge: true }).catch(note);
+        // 역할을 한 곳에서 조회할 수 있게 색인을 따로 둔다
+        db.collection('accounts')
+          .doc(uid)
+          .set(
+            {
+              uid: uid,
+              userId: identifier,
+              email: email,
+              role: role,
+              name: profile.name || ''
+            },
+            { merge: true }
+          )
+          .catch(note);
+      } catch (e) {
+        note(e);
       }
     }
 
@@ -201,14 +209,14 @@
 
     if (db) {
       try {
-        var acc = await db.collection('accounts').doc(uid).get();
-        if (acc.exists) {
+        var acc = await withTimeout(db.collection('accounts').doc(uid).get(), 2500);
+        if (acc && acc.exists) {
           var data = acc.data();
           if (data.role) storedRole = data.role;
           if (data.name) name = data.name;
         }
       } catch (e) {
-        console.warn('계정 정보를 읽지 못했습니다:', e);
+        console.warn('계정 정보를 읽지 못해 입력값으로 진행합니다:', e && e.code);
       }
     }
 
@@ -241,7 +249,10 @@
     if (code === 'auth/invalid-email') return '이름에 쓸 수 없는 문자가 있습니다.';
     if (code === 'auth/weak-password') return '비밀번호는 6자 이상으로 정해 주세요.';
     if (code === 'auth/wrong-password') return '비밀번호가 맞지 않습니다.';
-    if (code === 'auth/user-not-found') return '가입되지 않은 이름입니다.';
+    if (code === 'auth/user-not-found') return '가입되지 않은 아이디입니다.';
+    // 최근 Firebase는 없는 계정과 틀린 비밀번호를 같은 코드로 돌려준다
+    if (code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials')
+      return '가입되지 않은 아이디이거나 비밀번호가 다릅니다. 처음이라면 회원가입부터 해주세요.';
     if (code === 'auth/too-many-requests') return '시도가 많았습니다. 잠시 후 다시 해주세요.';
     if (code === 'auth/network-request-failed') return '네트워크에 연결하지 못했습니다.';
     if (code === 'auth/operation-not-allowed')
@@ -249,8 +260,18 @@
     return (err && err.message) || '처리 중 문제가 생겼습니다.';
   }
 
+  function isNoAccount(err) {
+    var code = (err && err.code) || '';
+    return (
+      code === 'auth/invalid-credential' ||
+      code === 'auth/invalid-login-credentials' ||
+      code === 'auth/user-not-found'
+    );
+  }
+
   window.ChwireupAccounts = {
     init: init,
+    isNoAccount: isNoAccount,
     signUp: signUp,
     signIn: signIn,
     signOut: signOut,

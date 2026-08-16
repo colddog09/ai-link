@@ -537,6 +537,14 @@
           setTimeout(function () { location.href = go; }, 750);
         } catch (err) {
           alertBox('error', window.ChwireupAccounts.message(err));
+
+          // 계정이 없어서 막힌 경우라면 회원가입 화면으로 바로 넘겨준다
+          if (mode === 'login' && window.ChwireupAccounts.isNoAccount(err)) {
+            mode = 'signup';
+            paint();
+            el('name').focus();
+          }
+
           cta.removeAttribute('data-busy');
           cta.removeAttribute('disabled');
         }
