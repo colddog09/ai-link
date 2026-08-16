@@ -805,37 +805,46 @@
           });
         }, (err) => console.warn("Jobs listener:", err));
 
-        // 3. Listen to User Profile
-        const unsubUser = db.collection('users').doc('user_kim_gunwoo').onSnapshot((doc) => {
-          if (doc.exists) {
-            setUserProfile(prev => ({ ...prev, ...doc.data() }));
-          }
-        }, (err) => console.warn("User listener:", err));
+        /* 3~6번 조회는 로그인한 본인 것만 볼 수 있다.
+           로그아웃 상태에서 부르면 권한 오류가 콘솔을 채우므로, 세션이
+           붙은 뒤에 내 uid로 범위를 좁혀 구독한다. */
+        let unsubUser = () => {};
+        let unsubApps = () => {};
+        let unsubMsgs = () => {};
+        let unsubReports = () => {};
 
-        // 4. Listen to Applications
-        const unsubApps = db.collection('applications').onSnapshot((snapshot) => {
-          if (!snapshot.empty) {
-            const dbApps = snapshot.docs.map(doc => doc.data());
-            setApplications(dbApps);
-          }
-        }, (err) => console.warn("Apps listener:", err));
+        const startPrivateListeners = (user) => {
+          if (!user) return;
+          const myUid = user.uid;
 
-        // 5. Listen to Messages
-        const unsubMsgs = db.collection('messages').onSnapshot((snapshot) => {
-          if (!snapshot.empty) {
-            const dbMsgs = snapshot.docs.map(doc => doc.data());
-            // Sort by creation time or id
-            setMessages(dbMsgs);
-          }
-        }, (err) => console.warn("Msgs listener:", err));
+          unsubUser = db.collection('users').doc(myUid).onSnapshot((doc) => {
+            if (doc.exists) {
+              setUserProfile((prev) => ({ ...prev, ...doc.data() }));
+            }
+          }, (err) => console.warn("User listener:", err && err.code));
 
-        // 6. Listen to AI Reports
-        const unsubReports = db.collection('ai_reports').onSnapshot((snapshot) => {
-          if (!snapshot.empty) {
-            const dbReports = snapshot.docs.map(doc => doc.data());
-            setSavedItemsList(dbReports);
-          }
-        }, (err) => console.warn("Reports listener:", err));
+          unsubApps = db.collection('applications')
+            .where('applicantUid', '==', myUid)
+            .onSnapshot((snapshot) => {
+              if (!snapshot.empty) setApplications(snapshot.docs.map((doc) => doc.data()));
+            }, (err) => console.warn("Apps listener:", err && err.code));
+
+          unsubMsgs = db.collection('messages')
+            .where('fromUid', '==', myUid)
+            .onSnapshot((snapshot) => {
+              if (!snapshot.empty) setMessages(snapshot.docs.map((doc) => doc.data()));
+            }, (err) => console.warn("Msgs listener:", err && err.code));
+
+          unsubReports = db.collection('ai_reports')
+            .where('userId', '==', myUid)
+            .onSnapshot((snapshot) => {
+              if (!snapshot.empty) setSavedItemsList(snapshot.docs.map((doc) => doc.data()));
+            }, (err) => console.warn("Reports listener:", err && err.code));
+        };
+
+        if (window.ChwireupAccounts && window.ChwireupAccounts.whenReady) {
+          window.ChwireupAccounts.whenReady().then(startPrivateListeners);
+        }
 
         return () => {
           unsubJobs();
