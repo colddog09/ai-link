@@ -5,22 +5,16 @@
    공고가 목록에 안 뜨는 원인이었다. 여기서 하나만 만들어 모두가 공유한다.
    ========================================================================== */
 (function () {
-  var CONFIG = {
-    apiKey: 'AIzaSyCrW6HXGjVbyk_0k9SKRHSRs629ol0dnYo',
-    authDomain: 'gen-lang-client-0529162863.firebaseapp.com',
-    projectId: 'gen-lang-client-0529162863',
-    storageBucket: 'gen-lang-client-0529162863.firebasestorage.app',
-    messagingSenderId: '819805526031',
-    appId: '1:819805526031:web:4adae67390cd8f3b162b7a'
-  };
-
-  // AI Studio가 만들어 둔 데이터베이스 이름. 없으면 기본 데이터베이스를 쓴다.
-  var NAMED_DB = 'ai-studio-ailink-99cc2c84-f5b6-4b68-ab80-c06409b6e80f';
+  // 설정은 assets/firebase-config.js 한 곳에서 가져온다
+  var CONFIG = window.ChwireupFirebaseConfig || null;
+  // 키가 비어 있으면 설정 전이라고 보고 연결하지 않는다
+  if (CONFIG && !CONFIG.apiKey) CONFIG = null;
+  var NAMED_DB = window.ChwireupDatabaseId || '';
 
   var cached = null;
 
   function app() {
-    if (typeof firebase === 'undefined') return null;
+    if (typeof firebase === 'undefined' || !CONFIG) return null;
     try {
       if (!firebase.apps.length) firebase.initializeApp(CONFIG);
       return firebase.app();
@@ -39,7 +33,8 @@
     if (!a || !firebase.firestore) return null;
 
     try {
-      cached = a.firestore(NAMED_DB);
+      // 이름을 지정하지 않았으면 기본 데이터베이스를 쓴다
+      cached = NAMED_DB ? a.firestore(NAMED_DB) : firebase.firestore();
     } catch (e) {
       try {
         cached = firebase.firestore();

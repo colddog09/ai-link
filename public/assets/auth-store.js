@@ -10,14 +10,9 @@
      jobs/{jobId}     { ..., owner, ownerUid }   ← assets/jobs-store.js가 기록
    ========================================================================== */
 (function () {
-  var CONFIG = {
-    apiKey: 'AIzaSyCrW6HXGjVbyk_0k9SKRHSRs629ol0dnYo',
-    authDomain: 'gen-lang-client-0529162863.firebaseapp.com',
-    projectId: 'gen-lang-client-0529162863',
-    storageBucket: 'gen-lang-client-0529162863.firebasestorage.app',
-    messagingSenderId: '819805526031',
-    appId: '1:819805526031:web:4adae67390cd8f3b162b7a'
-  };
+  // 설정은 assets/firebase-config.js 한 곳에서 가져온다
+  var CONFIG = window.ChwireupFirebaseConfig || null;
+  if (CONFIG && !CONFIG.apiKey) CONFIG = null;
 
   var ready = false;
   var auth = null;
@@ -26,7 +21,7 @@
   function init() {
     if (ready) return ready;
     try {
-      if (typeof firebase === 'undefined') return false;
+      if (typeof firebase === 'undefined' || !CONFIG) return false;
       if (!firebase.apps.length) firebase.initializeApp(CONFIG);
       auth = firebase.auth ? firebase.auth() : null;
       // 공고 목록과 같은 데이터베이스를 쓴다
