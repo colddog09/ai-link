@@ -10,6 +10,7 @@
   <script src="assets/theme.js"></script>
   <script src="assets/firebase-config.js"></script>
   <script src="assets/firebase-db.js"></script>
+  <script src="assets/profile.js"></script>
 
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -547,10 +548,10 @@
         <div class="flex items-center justify-between border-b border-outline-variant/30 pb-3 mb-4">
           <h2 class="text-base font-bold text-primary flex items-center gap-2">
             <span class="material-symbols-outlined text-primary text-[20px]">insights</span>
-            <span>AI 핵심 역량 진단 스코어 (종합 91.2점)</span>
+            <span>AI 핵심 역량 진단 스코어 (종합 <span id="score-overall">--</span>점)</span>
           </h2>
           <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-            상위 3.8% 매칭
+            상위 <span id="score-percentile">--</span>% 매칭
           </span>
         </div>
 
@@ -558,37 +559,37 @@
           <div class="p-3 bg-surface rounded-xl border border-outline-variant/40">
             <div class="flex justify-between text-xs font-bold mb-1">
               <span>임상 통찰력 & 전문성</span>
-              <span class="text-primary">96점</span>
+              <span class="text-primary" id="score-clinical">96점</span>
             </div>
             <div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
-              <div class="bg-primary h-full rounded-full" style="width: 96%;"></div>
+              <div class="bg-primary h-full rounded-full" id="bar-clinical" style="width: 0%;"></div>
             </div>
           </div>
           <div class="p-3 bg-surface rounded-xl border border-outline-variant/40">
             <div class="flex justify-between text-xs font-bold mb-1">
               <span>전략적 기획 & 거버넌스</span>
-              <span class="text-primary">92점</span>
+              <span class="text-primary" id="score-governance">92점</span>
             </div>
             <div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
-              <div class="bg-primary h-full rounded-full" style="width: 92%;"></div>
+              <div class="bg-primary h-full rounded-full" id="bar-governance" style="width: 0%;"></div>
             </div>
           </div>
           <div class="p-3 bg-surface rounded-xl border border-outline-variant/40">
             <div class="flex justify-between text-xs font-bold mb-1">
               <span>리더십 & 조직 관리</span>
-              <span class="text-primary">88점</span>
+              <span class="text-primary" id="score-leadership">88점</span>
             </div>
             <div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
-              <div class="bg-primary h-full rounded-full" style="width: 88%;"></div>
+              <div class="bg-primary h-full rounded-full" id="bar-leadership" style="width: 0%;"></div>
             </div>
           </div>
           <div class="p-3 bg-surface rounded-xl border border-outline-variant/40">
             <div class="flex justify-between text-xs font-bold mb-1">
               <span>소통 & 다학제 협업</span>
-              <span class="text-primary">85점</span>
+              <span class="text-primary" id="score-communication">85점</span>
             </div>
             <div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
-              <div class="bg-primary h-full rounded-full" style="width: 85%;"></div>
+              <div class="bg-primary h-full rounded-full" id="bar-communication" style="width: 0%;"></div>
             </div>
           </div>
         </div>
@@ -806,6 +807,81 @@
       }
     }
 
+    /* 화면에 입력한 값을 하나의 프로필로 모은다.
+       진단 결과와 공고 매칭률이 모두 이 값을 근거로 계산된다. */
+    function collectProfile() {
+      const val = (id) => {
+        const el = document.getElementById(id);
+        return el ? el.value : '';
+      };
+
+      // 경력 항목: 시작연도, 종료연도, 분야
+      const careers = [];
+      document.querySelectorAll('#experience_list > div').forEach((row) => {
+        const selects = row.querySelectorAll('select');
+        if (selects.length < 3) return;
+        const from = parseInt(selects[0].value, 10);
+        const toRaw = selects[1].value;
+        const to = toRaw === 'present' ? new Date().getFullYear() : parseInt(toRaw, 10);
+        careers.push({
+          from: from || null,
+          to: to || null,
+          years: from && to ? Math.max(0, to - from) : 0,
+          field: selects[2].value || 'other'
+        });
+      });
+
+      // 자격 및 교육 태그
+      const certifications = [];
+      document.querySelectorAll('#chips_container span').forEach((chip) => {
+        const text = chip.textContent.replace(/\s+/g, ' ').trim();
+        if (text) certifications.push(text);
+      });
+
+      const workstyleEl = document.querySelector('input[name="workstyle"]:checked');
+      const hadJobEl = document.querySelector('input[name="had_job"]:checked');
+
+      const totalYears = careers.reduce((sum, c) => sum + c.years, 0);
+
+      return {
+        years: totalYears,
+        careers: careers,
+        certifications: certifications,
+        workstyle: workstyleEl ? workstyleEl.value : 'fulltime',
+        isNewcomer: hadJobEl ? hadJobEl.value === 'no' : false,
+        commute: Number(val('commute-range')) || 0,
+        salaryMin: Number(val('min-salary')) || 0,
+        salaryMax: Number(val('max-salary')) || 0,
+        region: (function () {
+          try {
+            return localStorage.getItem('chwireup-region') || '전국';
+          } catch (e) {
+            return '전국';
+          }
+        })(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+
+    // 계산한 점수를 결과 화면에 반영한다
+    function paintScores(scores) {
+      const put = (id, v) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = v;
+      };
+      const bar = (id, v) => {
+        const el = document.getElementById(id);
+        if (el) el.style.width = v + '%';
+      };
+
+      ['clinical', 'governance', 'leadership', 'communication'].forEach((k) => {
+        put('score-' + k, scores[k] + '점');
+        bar('bar-' + k, scores[k]);
+      });
+      put('score-overall', scores.overall);
+      put('score-percentile', scores.percentile);
+    }
+
     // 2단계에서 분석을 누르면 결과를 바로 띄우지 않는다.
     // 로딩 화면을 먼저 보여주고, 저장이 끝나면 결과로 전환한다.
     async function startAnalysis() {
@@ -822,6 +898,11 @@
       if (loader) loader.style.display = 'flex';
       if (title) title.textContent = 'AI가 분석중입니다';
       if (subtitle) subtitle.textContent = '입력한 경력 중 자동화가 대신하기 어려운 부분을 추리는 중입니다.';
+
+      // 입력값을 프로필로 저장하고, 그 값으로 점수를 계산한다
+      const profile = collectProfile();
+      window.ChwireupProfile.save(profile);
+      const computed = window.ChwireupProfile.scores(profile);
 
       const steps = [
         { at: 0,    pct: 12, msg: '임상 경력과 자격 정보를 읽는 중' },
@@ -851,6 +932,7 @@
       if (loader) loader.style.display = 'none';
       if (title) title.textContent = '분석이 끝났습니다';
       if (subtitle) subtitle.textContent = '기계가 대신하기 어려운 역량과, 그에 맞는 자리를 아래에 정리했습니다.';
+      paintScores(computed);
       if (results) results.style.display = '';
     }
 

@@ -84,6 +84,8 @@
   <script src="assets/firebase-db.js"></script>
   <script src="assets/jobs-data.js"></script>
   <script src="assets/jobs-store.js"></script>
+  <script src="assets/profile.js"></script>
+  <script src="assets/applications.js"></script>
 
   <!-- Single All-in-One Integrated Application Script -->
   <script type="text/babel">
@@ -1049,6 +1051,20 @@
 
       // Confirm Application with Firestore Persistence
       const handleConfirmApply = async (coverNote) => {
+        // 기업 화면에서 볼 수 있도록 공용 저장소에도 지원 내역을 남긴다
+        if (window.ChwireupApplications) {
+          window.ChwireupApplications.apply(
+            {
+              id: selectedJob.id,
+              title: selectedJob.title,
+              companyName: selectedJob.companyName,
+              ownerUid: selectedJob.ownerUid || null,
+              owner: selectedJob.owner || selectedJob.companyName
+            },
+            coverNote
+          );
+        }
+
         const newApp = {
           id: `app-${Date.now()}`,
           userId: 'user_kim_gunwoo',

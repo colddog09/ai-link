@@ -307,7 +307,7 @@
           <!-- 로그인은 영문 아이디로 한다 -->
           <div class="field">
             <input id="userid" type="text" placeholder=" " required autocomplete="username"
-                   pattern="[A-Za-z0-9._-]{4,20}" value="drkim" />
+                   pattern="[A-Za-z0-9._\-]{4,20}" value="drkim" />
             <label for="userid">아이디 (영문·숫자)</label>
           </div>
 
@@ -318,7 +318,7 @@
           </div>
 
           <div class="field">
-            <input id="password" type="password" placeholder=" " required minlength="6" autocomplete="current-password" value="password1234" />
+            <input id="password" type="password" placeholder=" " required minlength="6" autocomplete="current-password" value="drkim1234" />
             <label for="password">비밀번호</label>
           </div>
 
@@ -470,10 +470,13 @@
         paint();
       });
       el('fill-demo').addEventListener('click', function () {
-        el('userid').value = COPY[role].demoId;
+        // 비밀번호는 '아이디 + 1234'로 통일한다
+        var demoId = COPY[role].demoId;
+        var demoPw = demoId + '1234';
+        el('userid').value = demoId;
         el('name').value = COPY[role].demoName;
-        el('password').value = 'password1234';
-        if (mode === 'signup') el('confirm').value = 'password1234';
+        el('password').value = demoPw;
+        if (mode === 'signup') el('confirm').value = demoPw;
       });
 
       window.addEventListener('resize', moveUnderline);
@@ -490,7 +493,7 @@
           alertBox('error', '아이디를 입력해 주세요.');
           return;
         }
-        if (!/^[A-Za-z0-9._-]{4,20}$/.test(userId)) {
+        if (!/^[A-Za-z0-9._\-]{4,20}$/.test(userId)) {
           alertBox('error', '아이디는 영문, 숫자, . _ - 만 써서 4~20자로 지어 주세요.');
           return;
         }
@@ -541,6 +544,22 @@
 
           // 계정이 없어서 막힌 경우라면 회원가입 화면으로 바로 넘겨준다
           if (mode === 'login' && window.ChwireupAccounts.isNoAccount(err)) {
+            // Firebase 연결 전에 만든 계정은 이 브라우저에만 있다. 그 사실을 알려준다.
+            var local = null;
+            try {
+              local = (JSON.parse(localStorage.getItem('chwireup-local-accounts') || '{}') || {})[
+                userId.toLowerCase()
+              ];
+            } catch (e2) {}
+
+            if (local) {
+              alertBox(
+                'error',
+                '"' + userId + '"는 서버 연결 전에 만든 계정이라 이 브라우저에만 남아 있습니다. ' +
+                  '같은 아이디로 다시 회원가입하면 정식 계정이 만들어집니다.'
+              );
+            }
+
             mode = 'signup';
             paint();
             el('name').focus();

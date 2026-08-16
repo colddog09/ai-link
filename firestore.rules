@@ -16,7 +16,7 @@ service cloud.firestore {
       allow update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
     }
 
-    // 개인 회원 프로필
+    // 개인 회원 프로필 (역량 진단 결과 포함)
     match /users/{userId} {
       allow read: if isMe(userId);
       allow write: if isMe(userId);
@@ -41,21 +41,27 @@ service cloud.firestore {
         (resource.data.applicantUid == request.auth.uid ||
          resource.data.ownerUid == request.auth.uid);
       allow create: if signedIn() && request.resource.data.applicantUid == request.auth.uid;
-      allow update, delete: if signedIn() && resource.data.applicantUid == request.auth.uid;
+      // 지원자는 자기 지원서를, 기업은 진행 상태를 고칠 수 있다
+      allow update: if signedIn() &&
+        (resource.data.applicantUid == request.auth.uid ||
+         resource.data.ownerUid == request.auth.uid);
+      allow delete: if signedIn() && resource.data.applicantUid == request.auth.uid;
     }
 
-    // 1:1 문의 메시지
+    // 1:1 문의 메시지: 주고받은 당사자만
     match /messages/{messageId} {
       allow read: if signedIn() &&
         (resource.data.fromUid == request.auth.uid ||
          resource.data.toUid == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.fromUid == request.auth.uid;
+      allow create: if signedIn();
       allow update, delete: if false;
     }
 
-    // AI 진단 리포트: 본인만
+    // AI 진단 리포트: 본인 것만 읽고 쓴다
     match /ai_reports/{reportId} {
-      allow read, write: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.userId == request.auth.uid;
     }
   }
 }
