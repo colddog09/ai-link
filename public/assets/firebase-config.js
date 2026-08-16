@@ -14,13 +14,12 @@
      AI Studio가 만든 프로젝트처럼 이름 있는 데이터베이스를 쓸 때만 적는다.
    ========================================================================== */
 window.ChwireupFirebaseConfig = {
-  // TODO: 콘솔 > 프로젝트 설정 > 내 앱 > 웹 앱에서 받은 값으로 채운다
-  apiKey: '',
+  apiKey: 'AIzaSyC89jZsaPyKwfDi2-Aq3VLb0Vg2LYWwPiY',
   authDomain: 'cheerrup-e0b4f.firebaseapp.com',
   projectId: 'cheerrup-e0b4f',
   storageBucket: 'cheerrup-e0b4f.firebasestorage.app',
-  messagingSenderId: '',
-  appId: ''
+  messagingSenderId: '732486257026',
+  appId: '1:732486257026:web:bc52b8e3744f43188de79b'
 };
 
 // 이름 있는 Firestore 데이터베이스를 쓸 때만 채운다. 새 프로젝트는 비워 둔다.
